@@ -13,7 +13,7 @@ jobs:
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/-n'
+          node-version: 'lts/*'
         
       - name: Checkout Umbrel
         uses: actions/checkout@v4
