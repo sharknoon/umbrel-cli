@@ -8,7 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install multipass
-        run: sudo snap install multipass
+        run: |
+          sudo snap install multipass && \
+          sudo snap restart multipass
 
       - name: Install NodeJS
         uses: actions/setup-node@v4
