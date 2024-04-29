@@ -1,0 +1,32 @@
+{
+  "name": "create-umbrel-app",
+  "version": "0.1.0",
+  "description": "A small cli tool to help you create and maintain your umbrel apps",
+  "type": "module",
+  "main": "index.js",
+  "bin": "index.js",
+  "scripts": {
+    "dev": "tsc && node dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharknoon/create-umbrel-app.git"
+  },
+  "keywords": [
+    "umbrel",
+    "apps",
+    "app store"
+  ],
+  "author": "Josua Frank <frank.josua@gmail.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/sharknoon/create-umbrel-app/issues"
+  },
+  "homepage": "https://github.com/sharknoon/create-umbrel-app#readme",
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "zod": "^3.23.4"
+  }
+}
