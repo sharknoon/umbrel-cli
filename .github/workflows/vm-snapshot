@@ -1,0 +1,22 @@
+name: Create Umbrel vm snapshot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install multipass
+        run: sudo snap install multipass
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        
+      - name: Checkout Umbrel
+        uses: actions/checkout@v4
+        with:
+          repository: "getumbrel/umbrel"
+
+      - name: Provision vm
+        run: npm run vm:provision
