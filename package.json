@@ -1,16 +1,16 @@
 {
-  "name": "create-umbrel-app",
+  "name": "umbrel-cli",
   "version": "0.1.0",
   "description": "A small cli tool to help you create and maintain your umbrel apps",
   "type": "module",
   "main": "index.js",
   "bin": "index.js",
   "scripts": {
-    "dev": "tsc && node dist"
+    "dev": "bun run src/index.ts"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sharknoon/create-umbrel-app.git"
+    "url": "git+https://github.com/sharknoon/umbrel-cli.git"
   },
   "keywords": [
     "umbrel",
@@ -20,13 +20,17 @@
   "author": "Josua Frank <frank.josua@gmail.com>",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/sharknoon/create-umbrel-app/issues"
+    "url": "https://github.com/sharknoon/umbrel-cli/issues"
   },
-  "homepage": "https://github.com/sharknoon/create-umbrel-app#readme",
+  "homepage": "https://github.com/sharknoon/umbrel-cli#readme",
   "devDependencies": {
+    "@types/node": "^20.12.7",
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "@types/yargs": "^17.0.32",
+    "yargs": "^17.7.2",
     "zod": "^3.23.4"
   }
 }
