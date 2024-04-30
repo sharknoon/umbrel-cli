@@ -4,11 +4,15 @@
   "description": "A small cli tool to help you create and maintain your umbrel apps",
   "type": "module",
   "main": "./dist/cli.cjs",
-  "bin": "./dist/cli.cjs",
+  "bin": {
+    "umbrel-cli": "./dist/cli.cjs",
+    "umbrel": "./dist/cli.cjs"
+  },
   "files": ["./dist/cli.cjs"],
   "scripts": {
     "dev": "tsup && node dist/cli.cjs",
-    "build": "tsup"
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
