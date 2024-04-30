@@ -14,9 +14,11 @@ import {
   spinner,
   text,
 } from "@clack/prompts";
-import { cloneOrPullRepository } from "../../utils/git";
-import { init } from "isomorphic-git";
+import { clone, init } from "isomorphic-git";
 import color from "picocolors";
+import http from "isomorphic-git/http/node";
+import { isValidUrl } from "../../utils/net";
+import semver from "semver";
 
 export async function createApp() {
   console.clear();
@@ -25,13 +27,14 @@ export async function createApp() {
 
   // Create or load the App Store
   let pathToAppStore: string;
+  let appStoreType: "official" | "community";
   try {
     // Check if we are already in an App Store directory
     await fs.access("umbrel-app-store.yml");
     pathToAppStore = path.resolve("");
   } catch (error) {
     log.info("You are not in an Umbrel App Store directory.");
-    const appStoreType = await select({
+    const result = await select({
       message: "Where would you like to publish your app?",
       options: [
         {
@@ -47,10 +50,11 @@ export async function createApp() {
       ],
     });
 
-    if (isCancel(appStoreType)) {
+    if (isCancel(result)) {
       cancel("Operation cancelled.");
       process.exit(0);
     }
+    appStoreType = result as "official" | "community";
 
     if (appStoreType === "official") {
       pathToAppStore = await getUmbrelAppsRepository();
@@ -84,7 +88,106 @@ export async function createApp() {
 
   log.info(`Using the App Store at ${pathToAppStore} to create a new app.`);
 
+  const takenAppIds = await getAppIds(pathToAppStore);
 
+  const manifest = group(
+    {
+      id: () =>
+        text({
+          message:
+            "Please choose an id for your app. It should be unique and contain only alphabets (a-z) and dashes (-).",
+          placeholder: "my-cool-app",
+          validate: (value) => {
+            if (!value) return "Please enter an id.";
+            if (!/^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$/.test(value))
+              return "Please enter a valid id.";
+            if (takenAppIds.includes(value)) return "This id is already taken.";
+            if (value === "umbrel-app-store")
+              return "Please choose a different id. This id is reserved for the official Umbrel App Store.";
+            if (value.length > 50) return "The id is too long.";
+            return undefined;
+          },
+        }),
+      name: () =>
+        text({
+          message: "Please enter the name of your app.",
+          placeholder: "My Cool App",
+          validate: (value) => {
+            if (!value) return "Please enter a name.";
+            if (value.length > 50) return "The name is too long.";
+            return undefined;
+          },
+        }),
+      tagline: () =>
+        text({
+          message:
+            "Please enter a tagline for your app. The tagline should pitch your app in one sentence.",
+          placeholder: "The coolest app on Umbrel",
+          validate: (value) => {
+            if (!value) return "Please enter a tagline.";
+            if (value.length > 100) return "The tagline is too long.";
+            return undefined;
+          },
+        }),
+      icon: () => {
+        if (appStoreType === "community") {
+          return text({
+            message: "Please enter the url of the app icon. (optional)",
+            placeholder:
+              "https://raw.githubusercontent.com/user/repo/main/my-cool-app/icon.svg",
+            validate: (value) => {
+              if (value.length > 0 && !isValidUrl(value))
+                return "Please enter a valid URL.";
+              return undefined;
+            },
+          });
+        }
+        return undefined;
+      },
+      category: () =>
+        select({
+          message: "Please choose a category for your app.",
+          options: [
+            // @ts-ignore
+            { value: "files", label: "Files & Productivity" },
+            // @ts-ignore
+            { value: "bitcoin", label: "Bitcoin" },
+            // @ts-ignore
+            { value: "media", label: "Media" },
+            // @ts-ignore
+            { value: "networking", label: "Networking" },
+            // @ts-ignore
+            { value: "social", label: "Social" },
+            // @ts-ignore
+            { value: "automation", label: "Home & Automation" },
+            // @ts-ignore
+            { value: "finance", label: "Finance" },
+            // @ts-ignore
+            { value: "ai", label: "AI" },
+            // @ts-ignore
+            { value: "developer", label: "Developer Tools" },
+          ],
+        }),
+      version: () =>
+        text({
+          message:
+            "Please enter the version of your app. This should correspond to the version of the upstream application.",
+          placeholder: "1.0.0",
+          validate: (value) => {
+            if (!value) return "Please enter a version.";
+            if (!semver.valid(value))
+              return "Please enter a valid semver version (https://semver.org).";
+            return undefined;
+          },
+        }),
+    },
+    {
+      onCancel: () => {
+        cancel("Operation cancelled.");
+        process.exit(0);
+      },
+    }
+  );
 
   note(`Bla Blub`, "Next steps.");
 
@@ -95,6 +198,13 @@ export async function createApp() {
   );
 }
 
+async function getAppIds(appStorePath: string): Promise<string[]> {
+  const files = await fs.readdir(appStorePath, { withFileTypes: true });
+  return files
+    .filter((file) => file.isDirectory() && !file.name.startsWith("."))
+    .map((file) => file.name);
+}
+
 async function getUmbrelAppsRepository(): Promise<string> {
   const s = spinner();
   s.start("Pulling the official Umbrel App Store from GitHub");
@@ -103,10 +213,15 @@ async function getUmbrelAppsRepository(): Promise<string> {
     ".umbrel-cli",
     "umbrel-apps"
   );
-  await cloneOrPullRepository(
-    pathToAppStore,
-    "https://github.com/getumbrel/umbrel-apps.git"
-  );
+  await fs.mkdir(pathToAppStore, { recursive: true });
+  await clone({
+    fs,
+    http,
+    dir: pathToAppStore,
+    url: "https://github.com/getumbrel/umbrel-apps.git",
+    depth: 1,
+    singleBranch: true,
+  });
   s.stop("Finished pulling the official Umbrel App Store");
 
   return pathToAppStore;

@@ -33,6 +33,7 @@
   "homepage": "https://github.com/sharknoon/umbrel-cli#readme",
   "devDependencies": {
     "@types/node": "^20.12.7",
+    "@types/semver": "^7.5.8",
     "@types/yargs": "^17.0.32",
     "tsup": "^8.0.2",
     "typescript": "^5.4.5"
@@ -40,6 +41,7 @@
   "dependencies": {
     "@clack/prompts": "^0.7.0",
     "isomorphic-git": "^1.25.7",
+    "semver": "^7.6.0",
     "yargs": "^17.7.2",
     "zod": "^3.23.4"
   }
