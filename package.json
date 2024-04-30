@@ -1,12 +1,14 @@
 {
   "name": "umbrel-cli",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "A small cli tool to help you create and maintain your umbrel apps",
   "type": "module",
-  "main": "index.js",
-  "bin": "index.js",
+  "main": "./dist/cli.cjs",
+  "bin": "./dist/cli.cjs",
+  "files": ["./dist/cli.cjs"],
   "scripts": {
-    "dev": "bun run src/index.ts"
+    "dev": "tsup --onSuccess \"node dist/cli.cjs\"",
+    "build": "tsup"
   },
   "repository": {
     "type": "git",
@@ -25,11 +27,13 @@
   "homepage": "https://github.com/sharknoon/umbrel-cli#readme",
   "devDependencies": {
     "@types/node": "^20.12.7",
+    "@types/yargs": "^17.0.32",
+    "tsup": "^8.0.2",
     "typescript": "^5.4.5"
   },
   "dependencies": {
     "@clack/prompts": "^0.7.0",
-    "@types/yargs": "^17.0.32",
+    "isomorphic-git": "^1.25.7",
     "yargs": "^17.7.2",
     "zod": "^3.23.4"
   }
