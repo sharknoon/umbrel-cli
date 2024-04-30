@@ -7,7 +7,7 @@
   "bin": "./dist/cli.cjs",
   "files": ["./dist/cli.cjs"],
   "scripts": {
-    "dev": "tsup --onSuccess \"node dist/cli.cjs\"",
+    "dev": "tsup && node dist/cli.cjs",
     "build": "tsup"
   },
   "repository": {
