@@ -5,10 +5,12 @@
   "type": "module",
   "main": "./dist/cli.cjs",
   "bin": {
-    "umbrel-cli": "./dist/cli.cjs",
-    "umbrel": "./dist/cli.cjs"
+    "umbrel-cli": "dist/cli.cjs",
+    "umbrel": "dist/cli.cjs"
   },
-  "files": ["./dist/cli.cjs"],
+  "files": [
+    "./dist/cli.cjs"
+  ],
   "scripts": {
     "dev": "tsup && node dist/cli.cjs",
     "build": "tsup",
