@@ -230,8 +230,25 @@ ${
 #installSize: 10000
 
 # Widgets are small UI elements that can be shown on the Umbrel home screen. (optional)
-# You can specify an array of widgets.
-#widgets: []
+# You can specify an array of widgets. Available widgets are: "text-with-buttons", "text-with-progress",
+# "two-stats-with-guage", "three-stats", "four-stats", "list-emoji" and "list"
+# To see how they look, visit http://umbrel-dev.local/stories/widgets
+#widgets:
+# The ID should be unique within the app and contain only alphabets (a-z) and dashes (-)
+- id: "disk-usage"
+  # The type of the widget (options see above)
+  type: "text-with-progress"
+  # How often the widget should update
+  refresh: "1m"
+  endpoint: "server:80/api/widgets/disk-usage"
+  link: ""
+  example:
+    type: "text-with-progress"
+    link: ""
+    title: "Time Machine Usage"
+    text: "420 GB"
+    progressLabel: "580 GB left"
+    progress: 0.42
 
 # If you are opening the terminal of an app (Settings > Advanced settings > Terminal), you can specify the default docker compose service name here. (optional)
 # This is useful, if you have multiple services in your docker-compose.yml and want to open the terminal of a specific service.
