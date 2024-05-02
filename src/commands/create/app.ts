@@ -17,6 +17,7 @@ import {
 import { clone, init, listRemotes } from "isomorphic-git";
 import color from "picocolors";
 import http from "isomorphic-git/http/node";
+import Handlebars from "handlebars";
 
 export async function createApp() {
   console.clear();
@@ -112,154 +113,43 @@ export async function createApp() {
     process.exit(0);
   }
 
+  // Create the app directory
   const appDir = path.resolve(pathToAppStore, appId);
   await fs.mkdir(appDir, { recursive: true });
 
-  const repoName = "<repo>";
+  // Create umbrel-app.yml
+  const manifestTemplate = Handlebars.compile(
+    await fs.readFile(
+      path.resolve("dist", "templates", "umbrel-app.yml.handlebars"),
+      "utf-8"
+    )
+  );
+  const manifest = manifestTemplate({
+    appId,
+    repoName: "<repo>",
+    isOfficialAppStore: appStoreType === "official",
+  });
+  await fs.writeFile(path.join(appDir, "umbrel-app.yml"), manifest, "utf-8");
 
-  const manifest = `# There are currently two manifest versions: 1 and 1.1. Version 1 is the basic version and is sufficient for most apps.
-# However, if your app requires the use of hooks (scripts that are run at different stages of the app lifecycle), you need to use version 1.1.
-# Hooks allow you to perform custom actions at different stages of the app's lifecycle, such as before the app starts (pre-start), after the
-# app installs (post-install), and more. If your app doesn't need to use hooks, you can stick with manifest version 1.
-manifestVersion: 1.1
+  // Create docker-compose.yml
+  const dockerComposeTemplate = Handlebars.compile(await fs.readFile(
+    path.resolve("dist", "templates", "docker-compose.yml.handlebars"),
+    "utf-8"
+  ));
+  const dockerCompose = dockerComposeTemplate({});
+  await fs.writeFile(
+    path.join(appDir, "docker-compose.yml"),
+    dockerCompose,
+    "utf-8"
+  );
 
-# The ID should be unique within the app store and contain only alphabets (a-z) and dashes (-).
-# It should be human readable and recognizable.
-# The value "umbrel-app-store" and the id of your Community App Store are reserved and cannot be used.
-id: ${appId}
-
-# Disabled apps are not shown in the app store. This is useful for apps that are still in development. (optional)
-#disabled: false
-
-# This is the name of your App. It will show up in the App Store as well as on the home screen of Umbrel.
-name: My Cool App
-
-# The tagline should describe your app in one sentence. Do not use more than 100 characters.
-tagline: The coolest app ever
-
-# This is the icon displayed in the App Store as well as on the home screen.
-# The icon is only needed for community App Stores. For the official Umbrel App Store, the icon will be uploaded via the Pull Request and stored
-# in a separate repostiory (https://github.com/getumbrel/umbrel-apps-gallery).
-${
-  appStoreType === "official"
-    ? `#icon: https://getumbrel.github.io/umbrel-apps-gallery/${appId}/icon.svg`
-    : `icon: https://raw.githubusercontent.com/<user>/${repoName}/main/${appId}/icon.svg`
-}
-
-# The category should be one of the following: "files", "bitcoin", "media", "networking", "social", "automation", "finance", "ai" or "developer".
-category: files
-
-# The version of your app. This should be a string that follows the semantic versioning scheme (https://semver.org/).
-# The version should correspond to the version of the upstream application.
-version: "1.0.0"
-
-# The port your app is reachable from a webbrowser. This should be a number between 1024 and 65535.
-port: 3000
-
-# A description of your app. This will be shown in the App Store.
-description: >-
-  This is the best app you have ever seen. It does everything you ever wanted and more.
-
-  It also supports new lines.
-
-# The developer of the app. This is not necessarily the submitter but the actual developer of the app.
-developer: John Doe
-
-# The website of the app. This should be the official website of the app.
-website: http://example.com
-
-# The submitter of the app. This is the person who submits the app to the App Store (probably you).
-submitter: Jane Doe
-
-# The submission URL. This should be a link to the pull request or the commit that adds the app to the App Store.
-${
-  appStoreType === "official"
-    ? `submission: https://github.com/getumbrel/umbrel-apps/pull/<number>`
-    : `submission: https://github.com/<user>/${repoName}/commit/<full-commit-sha>`
-}
-
-# The repository of the app. This should be a link to the repository of the app. (optional)
-#repo: https://github.com/<user>/<repo>
-
-# The support URL. This should be a link to the support page of the app.
-support: https://github.com/<user>/<repo>/discussions
-
-# The gallery is an array of filenames (Official App Store) or URLs (Community App Stores) to images that will be shown in the App Store.
-${
-  appStoreType === "official"
-    ? `gallery:\n  - 1.jpg\n  - 2.jpg`
-    : `gallery:\n  - https://raw.githubusercontent.com/<user>/${repoName}/main/${appId}/1.jpg\n  - https://raw.githubusercontent.com/<user>/${repoName}/main/${appId}/2.jpg`
-}
-
-# The release notes of the app. This should be a string that describes the changes in the new version. (optional)
-#releaseNotes: >-
-#  This is a new version of the app.
-#  
-#  It has some new features and some bug fixes.
-
-# The dependencies of the app. This should be an array of IDs of apps that this app depends on. (optional)
-#dependencies: []
-
-# The permissions of the app. This should be an array of permissions that the app requires. (optional)
-# Available permissions are: 
-# - STORAGE_DOWNLOADS: Allows the app to download files to the storage.
-#permissions: []
-
-# If the app is only accessible via a subpath, you can specify it here. (optional)
-#path: /web
-
-# If the user needs to know about a default username and password, you can specify it here. (optional)
-#defaultUsername: admin
-#defaultPassword: admin
-
-# If true, Umbrel will generate a deterministic password for the app. (optional)
-# It will be shown to the user in the Umbrel UI and can be used inside the docker-compose.yml as the $APP_PASSWORD variable.
-# This will also override the defaultPassword if set.
-#deterministicPassword: false
-
-# If the app is optimized for the Umbrel Home (https://umbrel.com/umbrel-home), you can specify it here. (optional)
-#optimizedForUmbrelHome: false
-
-# If true, the app is only accessible via Tor. (optional)
-# Users will need to access their Umbrel in a Tor browser on their remote access URL (Settings > Remote Tor access) to open the app.
-#torOnly: false
-
-# If the size of the app is known, you can specify it here. (optional)
-# It will be shown on the "Install" button in the App Store.
-# IMPORTANT: The size needs to be in bytes.
-#installSize: 10000
-
-# Widgets are small UI elements that can be shown on the Umbrel home screen. (optional)
-# You can specify an array of widgets.
-# Examples:
-# The ID should be unique within the app and contain only alphabets (a-z) and dashes (-)
-#- id: "disk-usage"
-#  # The type of the widget. Available widgets are: "text-with-buttons", "text-with-progress",
-#  # "two-stats-with-guage", "three-stats", "four-stats", "list-emoji" and "list".
-#  # To see how they look, visit http://umbrel.local/stories/widgets.
-#  type: "text-with-progress"
-#  # How often the widget should update. See all available options here: https://github.com/vercel/ms/blob/main/readme.md
-#  refresh: "1m"
-#  # The endpoint to fetch the data from.
-#  # The hostname is the service from the docker-compose.yml.
-#  endpoint: "server:80/api/widgets/disk-usage"
-#  # On click of the widget, the app will open. (optional)
-#  # The link (which is actually a path) will be appended to the app's URL.
-#  # When the link is an empty string, the app will open as if the icon was clicked.
-#  link: "/disk-usage"
-#  # An example of the widget to show off the widget in the widget picker.
-#  example:
-    type: "text-with-progress"
-    link: ""
-    title: "Time Machine Usage"
-    text: "420 GB"
-    progressLabel: "580 GB left"
-    progress: 0.42
-#widgets: []
-
-# If you are opening the terminal of an app (Settings > Advanced settings > Terminal), you can specify the default docker compose service name here. (optional)
-# This is useful, if you have multiple services in your docker-compose.yml and want to open the terminal of a specific service.
-#defaultShell: app`;
+  // Create exports.sh
+  const exportsTemplate = Handlebars.compile(await fs.readFile(
+    path.resolve("dist", "templates", "exports.sh.handlebars"),
+    "utf-8"
+  ));
+  const exports = exportsTemplate({});
+  await fs.writeFile(path.join(appDir, "exports.sh"), exports, "utf-8");
 
   note(`Bla Blub`, "Next steps.");
 

@@ -9,7 +9,8 @@
     "umbrel": "dist/cli.cjs"
   },
   "files": [
-    "./dist/cli.cjs"
+    "./dist/cli.cjs",
+    "./dist/templates"
   ],
   "scripts": {
     "dev": "tsup && node dist/cli.cjs",
@@ -40,6 +41,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.7.0",
+    "handlebars": "^4.7.8",
     "isomorphic-git": "^1.25.7",
     "semver": "^7.6.0",
     "yargs": "^17.7.2",
