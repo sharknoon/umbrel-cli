@@ -17,13 +17,13 @@ services:
     image: <docker-image>:<tag>@sha256:<digest>
     restart: on-failure
     stop_grace_period: 1m
-    ports:
+    # ports:
       # You do not need to expose the port that your app's web server is listening on if you're using the app_proxy service.
       # This is handled by the APP_HOST and APP_PORT environment variables in the service above.
       #
       # If you need to expose additional ports, you can do so like this, replacing <port> with the port number:
       #- <port>:<port>
-    volumes:
+    # volumes:
       # Uncomment to mount your data directories inside
       # the Docker container for storing persistent data
       # - ${APP_DATA_DIR}/foo:/foo
@@ -36,7 +36,7 @@ services:
       # Uncomment to mount Bitcoin Core's data directory as
       # read-only inside the Docker container at path /bitcoin
       # - ${APP_BITCOIN_DATA_DIR}:/bitcoin:ro
-    environment:
+    # environment:
       # Pass any environment variables to your app for configuration in the form:
       # VARIABLE_NAME: value
       #
