@@ -3,18 +3,17 @@
   "version": "0.1.0-alpha.3",
   "description": "A small cli tool to help you create and maintain your umbrel apps",
   "type": "module",
-  "main": "./dist/cli.cjs",
+  "main": "./dist/cli.js",
   "bin": {
-    "umbrel-cli": "dist/cli.cjs",
-    "umbrel": "dist/cli.cjs"
+    "umbrel-cli": "dist/cli.js",
+    "umbrel": "dist/cli.js"
   },
   "files": [
-    "./dist/cli.cjs",
-    "./dist/templates"
+    "./dist"
   ],
   "scripts": {
-    "dev": "tsup && node dist/cli.cjs",
-    "build": "tsup",
+    "dev": "node esbuild.config.js && node dist/cli.js",
+    "build": "node esbuild.config.js",
     "prepublishOnly": "npm run build"
   },
   "repository": {
@@ -33,19 +32,20 @@
   },
   "homepage": "https://github.com/sharknoon/umbrel-cli#readme",
   "devDependencies": {
-    "@types/node": "^20.12.7",
+    "@types/node": "^20.12.8",
     "@types/semver": "^7.5.8",
     "@types/yargs": "^17.0.32",
-    "tsup": "^8.0.2",
+    "esbuild": "0.20.2",
+    "tslib": "^2.6.2",
     "typescript": "^5.4.5"
   },
   "dependencies": {
     "@clack/prompts": "^0.7.0",
     "handlebars": "^4.7.8",
-    "isomorphic-git": "^1.25.7",
+    "isomorphic-git": "^1.25.8",
     "semver": "^7.6.0",
     "yaml": "^2.4.2",
     "yargs": "^17.7.2",
-    "zod": "^3.23.4"
+    "zod": "^3.23.6"
   }
 }

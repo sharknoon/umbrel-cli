@@ -1,10 +1,9 @@
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
-import p from "node:path";
+import path from "node:path";
 import {
   cancel,
   group,
-  intro,
   isCancel,
   note,
   outro,
@@ -14,15 +13,11 @@ import {
 } from "@clack/prompts";
 import color from "picocolors";
 import git from "isomorphic-git";
-import http from "isomorphic-git/http/node";
+import http from "isomorphic-git/http/node/index.js";
 import Handlebars from "handlebars";
 import { isAppStoreDirectory } from "../../utils/appstore";
 
 export async function create(name?: string) {
-  console.clear();
-
-  intro(`${color.bgBlue(color.white(" Initialize an Umbrel App Store "))}`);
-
   if (await isAppStoreDirectory()) {
     note(
       `  Get started by creating a new app using: ${color.cyan(
@@ -48,7 +43,7 @@ export async function create(name?: string) {
       if (value[0] !== ".") return "Please enter a relative path.";
       if (!/^\.(?:\/[a-z]+(?:-[a-z]+)*)+$/.test(value))
         return "Please enter a valid path.";
-      if (existsSync(p.resolve(value)))
+      if (existsSync(path.resolve(value)))
         return "The directory already exists. Please choose a different path.";
       return undefined;
     },
@@ -57,7 +52,7 @@ export async function create(name?: string) {
     cancel("Operation cancelled.");
     process.exit(0);
   }
-  pathToAppStore = p.resolve(pathToAppStore);
+  pathToAppStore = path.resolve(pathToAppStore);
 
   let appStoreType: "official" | "community";
   const result = await select({
@@ -101,14 +96,14 @@ export async function create(name?: string) {
   );
 }
 
-async function cloneUmbrelAppsRepository(path: string) {
+async function cloneUmbrelAppsRepository(dir: string) {
   const s = spinner();
   s.start("Pulling the official Umbrel App Store from GitHub");
-  await fs.mkdir(path, { recursive: true });
+  await fs.mkdir(dir, { recursive: true });
   await git.clone({
     fs,
     http,
-    dir: path,
+    dir,
     url: "https://github.com/getumbrel/umbrel-apps.git",
     depth: 1,
     singleBranch: true,
@@ -116,7 +111,7 @@ async function cloneUmbrelAppsRepository(path: string) {
   s.stop("Finished pulling the official Umbrel App Store");
 }
 
-async function createCommunityAppStore(path: string) {
+async function createCommunityAppStore(dir: string) {
   const project = await group(
     {
       id: () =>
@@ -156,12 +151,12 @@ async function createCommunityAppStore(path: string) {
   s.start("Initializing the Community App Store");
 
   // project directory
-  await fs.mkdir(path, { recursive: true });
+  await fs.mkdir(dir, { recursive: true });
 
   // umbrel-app-store.yml
   const umbrelAppStoreTemplate = Handlebars.compile(
     await fs.readFile(
-      p.resolve(
+      path.resolve(
         __dirname,
         "templates",
         "appstore",
@@ -172,7 +167,7 @@ async function createCommunityAppStore(path: string) {
   );
   const umbrelAppStoreYml = umbrelAppStoreTemplate({ project });
   await fs.writeFile(
-    p.join(path, "umbrel-app-store.yml"),
+    path.join(dir, "umbrel-app-store.yml"),
     umbrelAppStoreYml,
     "utf-8"
   );
@@ -180,25 +175,25 @@ async function createCommunityAppStore(path: string) {
   // .gitignore
   const gitignoreTemplate = Handlebars.compile(
     await fs.readFile(
-      p.resolve(__dirname, "templates", "appstore", "gitignore.handlebars"),
+      path.resolve(__dirname, "templates", "appstore", "gitignore.handlebars"),
       "utf-8"
     )
   );
   const gitignore = gitignoreTemplate({});
-  await fs.writeFile(p.join(path, ".gitignore"), gitignore, "utf-8");
+  await fs.writeFile(path.join(dir, ".gitignore"), gitignore, "utf-8");
 
   // README.md
   const readmeTemplate = Handlebars.compile(
     await fs.readFile(
-      p.resolve(__dirname, "templates", "appstore", "README.md.handlebars"),
+      path.resolve(__dirname, "templates", "appstore", "README.md.handlebars"),
       "utf-8"
     )
   );
   const readme = readmeTemplate({ project });
-  await fs.writeFile(p.join(path, "README.md"), readme, "utf-8");
+  await fs.writeFile(path.join(dir, "README.md"), readme, "utf-8");
 
   // git init
-  await git.init({ fs, dir: path, defaultBranch: "main" });
+  await git.init({ fs, dir: dir, defaultBranch: "main" });
 
   s.stop("Finished initializing the Community App Store");
 }

@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
   cancel,
-  intro,
   isCancel,
   log,
   note,
@@ -15,12 +14,9 @@ import {
   getAppStoreId,
   isOfficialAppStoreDirectory,
 } from "../../utils/appstore";
+import { getAllOfficialAppStoreAppIds } from "../../utils/global";
 
 export async function create(name?: string) {
-  console.clear();
-
-  intro(`${color.bgBlue(color.white(" Create an Umbrel App "))}`);
-
   // Create or load the App Store
   const pathToAppStore: string = path.resolve();
   const appStoreType = (await isOfficialAppStoreDirectory())
@@ -29,7 +25,7 @@ export async function create(name?: string) {
   const appStoreId = await getAppStoreId();
   log.info(`Using the App Store at ${pathToAppStore} to create a new app.`);
 
-  const takenAppIds = await getAppIds(pathToAppStore);
+  const takenAppIds = await getAllOfficialAppStoreAppIds();
 
   const appId = await text({
     message:
@@ -111,11 +107,4 @@ export async function create(name?: string) {
       color.cyan("https://github.com/sharknoon/umbrel-cli/issues")
     )}`
   );
-}
-
-async function getAppIds(appStorePath: string): Promise<string[]> {
-  const files = await fs.readdir(appStorePath, { withFileTypes: true });
-  return files
-    .filter((file) => file.isDirectory() && !file.name.startsWith("."))
-    .map((file) => file.name);
 }
