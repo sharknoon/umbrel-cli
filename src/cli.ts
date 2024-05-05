@@ -5,12 +5,11 @@ import { hideBin } from "yargs/helpers";
 import { create as createAppStore } from "./commands/appstore/create";
 import { create as createApp } from "./commands/app/create";
 import { isAppStoreDirectory } from "./utils/appstore";
-import color from "picocolors";
-import { intro, note } from "@clack/prompts";
+import pc from "picocolors";
+import { intro } from "@clack/prompts";
 import { lint } from "./commands/lint";
 
-
-yargs(hideBin(process.argv))
+await yargs(hideBin(process.argv))
   .scriptName("umbrel")
   .command(
     "appstore create [name]",
@@ -25,7 +24,7 @@ yargs(hideBin(process.argv))
     },
     async (argv) => {
       console.clear();
-      intro(`${color.bgBlue(color.white(" Initialize an Umbrel App Store "))}`);
+      intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App Store "))}`);
       await createAppStore(argv.name as string | undefined);
     }
   )
@@ -41,7 +40,7 @@ yargs(hideBin(process.argv))
     },
     async (argv) => {
       console.clear();
-      intro(`${color.bgBlue(color.white(" Initialize an Umbrel App "))}`);
+      intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App "))}`);
       await requireAppStoreDirectory();
       createApp(argv.name as string | undefined);
     }
@@ -51,24 +50,27 @@ yargs(hideBin(process.argv))
     "Lints the current Umbrel App Store and all apps in it",
     () => {},
     async () => {
-      console.clear();
-      intro(`${color.bgBlue(color.white(" Linting Umbrel App Store and Apps"))}`);
       await requireAppStoreDirectory();
       lint();
     }
   )
   .demandCommand(1)
   .strict()
-  .parse();
+  .parseAsync();
 
 async function requireAppStoreDirectory() {
   if (!(await isAppStoreDirectory())) {
-    note(
-      `Please navigate to an Umbrel App Store directory\nor create a new one using ${color.cyan(
-        color.bold("umbrel appstore create [name]")
-      )}.`,
-      color.red(color.bold("You are not in an Umbrel App Store directory!"))
+    console.log(
+      pc.red(pc.bold("You are not in an Umbrel App Store directory!"))
     );
+    console.log();
+    console.log(`  Please navigate to an Umbrel App Store directory`);
+    console.log(
+      `  or create a new one using ${pc.cyan(
+        pc.bold("umbrel appstore create [name]")
+      )}.`
+    );
+    console.log();
     process.exit(1);
   }
 }

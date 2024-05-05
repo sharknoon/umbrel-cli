@@ -1,13 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import {
-  cancel,
-  isCancel,
-  log,
-  note,
-  outro,
-  text,
-} from "@clack/prompts";
+import { cancel, isCancel, log, note, outro, text } from "@clack/prompts";
 import color from "picocolors";
 import Handlebars from "handlebars";
 import {
@@ -100,7 +93,11 @@ export async function create(name?: string) {
   const exports = exportsTemplate({});
   await fs.writeFile(path.join(appDir, "exports.sh"), exports, "utf-8");
 
-  note(`Bla Blub`, "Next steps");
+  note(
+    ` - fill out the ${color.cyan("umbrel-app.yml")} file
+ - add your containers to the docker-compose.yml`,
+    "Next steps"
+  );
 
   outro(
     `Problems? ${color.underline(

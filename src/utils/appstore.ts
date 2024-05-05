@@ -45,3 +45,10 @@ export async function getAppStoreId(): Promise<string> {
     }
   }
 }
+
+export async function getAllAppStoreAppIds(): Promise<string[]> {
+  const files = await fs.readdir(path.resolve(), { withFileTypes: true });
+  return files
+    .filter((file) => file.isDirectory() && !file.name.startsWith("."))
+    .map((file) => file.name);
+}
