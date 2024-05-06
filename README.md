@@ -26,11 +26,37 @@ TODO image
 
 ### `umbrel app create <name>`
 
+> [!NOTE]  
+> This command can only be executed inside an App Store directory!
+
 This command scaffoldes a new app. It needs to be invoked from inside an App Store directory.
 
 `<name>` is an optional name for the app directory. When left empty, you get asked to provide one.
 
 TODO image
+
+### `umbrel lint`
+
+> [!NOTE]  
+> This command can only be executed inside an App Store directory!
+
+This command checkes your App Store and all Apps inside it for potential errors.
+
+These files are being checked:
+
+- Validity of `umbrel-app-store.yml`
+- Existence of `README.me`
+- Validity of `<app>/umbrel-app.yml`
+- (WIP) Validity of `<app>/docker-compose.yml`
+- (WIP) Validity of `<app>/exports.sh`
+
+TODO image
+
+### `umbrel generate port`
+
+This command generates a new and not yet used port to be used inside one of your apps.
+It checks against the ports from the official App Store and when executed from a Community App Store,
+also against those ports.
 
 ## Roadmap
 
