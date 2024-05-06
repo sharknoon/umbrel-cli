@@ -54,7 +54,6 @@ export async function create(name?: string) {
   }
   pathToAppStore = path.resolve(pathToAppStore);
 
-  let appStoreType: "official" | "community";
   const result = await select({
     message: "Which type of App Store would you like to initialize?",
     options: [
@@ -74,7 +73,7 @@ export async function create(name?: string) {
     cancel("Operation cancelled.");
     process.exit(0);
   }
-  appStoreType = result as "official" | "community";
+  const appStoreType = result as "official" | "community";
 
   if (appStoreType === "official") {
     await cloneUmbrelAppsRepository(pathToAppStore.toString());

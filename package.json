@@ -1,6 +1,6 @@
 {
   "name": "umbrel-cli",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "description": "A small cli tool to help you create and maintain your umbrel apps",
   "type": "module",
   "main": "./dist/cli.js",
@@ -14,6 +14,7 @@
   "scripts": {
     "dev": "node esbuild.config.js && node dist/cli.js",
     "build": "node esbuild.config.js",
+    "lint": "eslint .",
     "prepublishOnly": "npm run build"
   },
   "repository": {
@@ -32,12 +33,16 @@
   },
   "homepage": "https://github.com/sharknoon/umbrel-cli#readme",
   "devDependencies": {
+    "@eslint/js": "^9.2.0",
     "@types/node": "^20.12.8",
     "@types/semver": "^7.5.8",
     "@types/yargs": "^17.0.32",
     "esbuild": "0.20.2",
+    "eslint": "^8.57.0",
+    "globals": "^15.1.0",
     "tslib": "^2.6.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^7.8.0"
   },
   "dependencies": {
     "@clack/prompts": "^0.7.0",

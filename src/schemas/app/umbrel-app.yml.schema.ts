@@ -2,6 +2,7 @@ import { z } from "zod";
 import { isValidUrl } from "../../utils/net";
 import { isCommunityAppStoreDirectory } from "../../utils/appstore";
 import { getAllOfficialAppStorePorts } from "../../utils/global";
+import path from "node:path";
 
 const usedPorts = await getAllOfficialAppStorePorts();
 
@@ -54,7 +55,7 @@ export default z
       "developer",
     ]),
     version: z.string().min(1),
-    port: z.number().min(0).max(65535).refine((port) => !usedPorts.includes(port), {
+    port: z.number().min(0).max(65535).refine((port) => usedPorts.filter(p => p === port).length === 1, {
       message: "The port is already in use by another app.",
     }),
     description: z.string().min(1).max(5000),
@@ -71,14 +72,14 @@ export default z
           if (await isCommunityAppStoreDirectory()) {
             return isValidUrl(image);
           } else {
-            return /^\.(?:\/[a-z]+(?:-[a-z]+)*)+$/.test(image);
+            return isValidUrl(image) || path.parse(image).ext !== "";
           }
         },
         {
           message: `The gallery images must be a ${
             (await isCommunityAppStoreDirectory())
               ? "valid URL"
-              : "relative path to a file"
+              : "path to a file"
           }.`,
         }
       )
@@ -92,7 +93,7 @@ export default z
       .or(z.literal(""))
       .refine((path) => {
         if (!path) return true;
-        return /^\.(?:\/[a-z]+(?:-[a-z]+)*)+$/.test(path);
+        return isValidUrl(`https://example.com${path}`);
       }),
     defaultUsername: z.string().optional().or(z.literal("")),
     defaultPassword: z.string().optional().or(z.literal("")),

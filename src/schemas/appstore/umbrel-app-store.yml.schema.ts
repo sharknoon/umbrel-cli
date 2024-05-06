@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { getAllOfficialAppStoreAppIds } from "../../utils/global";
 
 // Reference: https://github.com/getumbrel/umbrel/blob/master/packages/umbreld/source/modules/apps/schema.ts
 export default z.object({

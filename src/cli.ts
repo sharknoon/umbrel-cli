@@ -49,6 +49,7 @@ await yargs(hideBin(process.argv))
   .command(
     "lint",
     "Lints the current Umbrel App Store and all apps in it",
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     () => {},
     async () => {
       await requireAppStoreDirectory();
@@ -58,6 +59,7 @@ await yargs(hideBin(process.argv))
   .command(
     "generate port",
     "Generates a random unused port number",
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     () => {},
     async () => {
       await port();

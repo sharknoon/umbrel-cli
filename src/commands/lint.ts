@@ -12,14 +12,18 @@ import pc from "picocolors";
 
 export async function lint() {
   let noLintingErrors = true;
-  noLintingErrors &&= await lintUmbrelAppStoreYml();
-  noLintingErrors &&= await lintReadmeMd();
-  for (let id of await getAllAppStoreAppIds()) {
-    noLintingErrors &&= await lintUmbrelAppYml(id);
+  noLintingErrors = (await lintUmbrelAppStoreYml()) && noLintingErrors;
+  noLintingErrors = (await lintReadmeMd()) && noLintingErrors;
+  for (const id of await getAllAppStoreAppIds()) {
+    noLintingErrors = await lintUmbrelAppYml(id) && noLintingErrors;
     // TODO lintDockerComposeYml(id)
     // TODO exportsSh(id)
   }
-  console.log(noLintingErrors ? pc.green("No linting errors found 🎉") : pc.red("Linting failed."));
+  console.log(
+    noLintingErrors
+      ? pc.green("No linting errors found 🎉")
+      : pc.red("Linting failed.")
+  );
 }
 
 async function lintUmbrelAppStoreYml(): Promise<boolean> {
@@ -52,7 +56,9 @@ async function lintUmbrelAppStoreYml(): Promise<boolean> {
   }
 
   // zod parse the file
-  const result = await umbrelAppStoreYmlSchema.safeParseAsync(umbrelAppStoreYml);
+  const result = await umbrelAppStoreYmlSchema.safeParseAsync(
+    umbrelAppStoreYml
+  );
   if (!result.success) {
     result.error.issues.forEach((issue) => {
       printLintingError(issue.path.join("."), issue.message);
