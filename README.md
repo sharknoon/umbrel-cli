@@ -12,7 +12,8 @@ umbrel appstore create
 ## Features
 
 - 🛍️ Support for the official Umbrel App Store as well as Community App Stores
-- 🗺️ Guides you through the creation of an app
+- 🗺️ Guides you through the creation of an app or an Community App Store
+- 🕵️ Finds errors in your app manifests and compose files early
 
 ## Documentation
 
@@ -58,12 +59,14 @@ This command generates a new and not yet used port to be used inside one of your
 It checks against the ports from the official App Store and when executed from a Community App Store,
 also against those ports.
 
+TODO image
+
 ## Roadmap
 
 - [x] 🛍️ Creating a Community App Store / cloning the official Umbrel App Store
 - [x] 🗺️ Creating an app
 - [ ] ⬇️ Creating an update an app
-- [ ] 🕵️ Linting apps and appstores using `umbrel lint`
+- [x] 🕵️ Linting apps and appstores using `umbrel lint`
 - [ ] 🧪 Testing an app using `umbrel test <appid>`
 
 ## Run Umbrel OS
