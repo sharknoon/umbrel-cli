@@ -5,8 +5,12 @@ services:
   # The app proxy is always needed and tells Umbrel how to route traffic to your app.
   app_proxy:
     environment:
+      # For apps in the official app store:
       # <app-id>_<web-container-name>_1
       # e.g. 'btc-rpc-explorer_web_1'
+      # For apps in the community app store:
+      # <app-store-id>-<app-id>_<web-container-name>_1
+      # e.g. 'sparkles-btc-rpc-explorer_web_1'
       # Note that the '_1' at the end is needed
       APP_HOST: <web-container-dns-name>
       # The port your app's web server is listening on

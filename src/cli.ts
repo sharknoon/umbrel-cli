@@ -8,6 +8,7 @@ import { isAppStoreDirectory } from "./utils/appstore";
 import pc from "picocolors";
 import { intro } from "@clack/prompts";
 import { lint } from "./commands/lint";
+import { port } from "./commands/generate/port";
 
 await yargs(hideBin(process.argv))
   .scriptName("umbrel")
@@ -42,7 +43,7 @@ await yargs(hideBin(process.argv))
       console.clear();
       intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App "))}`);
       await requireAppStoreDirectory();
-      createApp(argv.name as string | undefined);
+      await createApp(argv.name as string | undefined);
     }
   )
   .command(
@@ -51,7 +52,15 @@ await yargs(hideBin(process.argv))
     () => {},
     async () => {
       await requireAppStoreDirectory();
-      lint();
+      await lint();
+    }
+  )
+  .command(
+    "generate port",
+    "Generates a random unused port number",
+    () => {},
+    async () => {
+      await port();
     }
   )
   .demandCommand(1)

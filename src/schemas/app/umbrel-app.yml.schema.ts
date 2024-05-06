@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { isValidUrl } from "../../utils/net";
 import { isCommunityAppStoreDirectory } from "../../utils/appstore";
+import { getAllOfficialAppStorePorts } from "../../utils/global";
+
+const usedPorts = await getAllOfficialAppStorePorts();
 
 // Reference: https://github.com/getumbrel/umbrel/blob/master/packages/umbreld/source/modules/apps/schema.ts
 export default z
@@ -51,7 +54,9 @@ export default z
       "developer",
     ]),
     version: z.string().min(1),
-    port: z.number().min(0).max(65535),
+    port: z.number().min(0).max(65535).refine((port) => !usedPorts.includes(port), {
+      message: "The port is already in use by another app.",
+    }),
     description: z.string().min(1).max(5000),
     developer: z.coerce.string().min(1).max(50),
     website: z.string().url(),

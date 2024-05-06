@@ -52,3 +52,15 @@ export async function getAllAppStoreAppIds(): Promise<string[]> {
     .filter((file) => file.isDirectory() && !file.name.startsWith("."))
     .map((file) => file.name);
 }
+
+export async function getAllAppStorePorts(): Promise<number[]> {
+  const appIds = await getAllAppStoreAppIds();
+  const ports: number[] = [];
+  for (const appId of appIds) {
+    const umbrelAppYml = path.resolve(appId, "umbrel-app.yml");
+    const appYml = await fs.readFile(umbrelAppYml, "utf-8");
+    const app = YAML.parse(appYml);
+    ports.push(app.port);
+  }
+  return ports;
+}

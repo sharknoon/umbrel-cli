@@ -16,6 +16,8 @@ export async function lint() {
   noLintingErrors &&= await lintReadmeMd();
   for (let id of await getAllAppStoreAppIds()) {
     noLintingErrors &&= await lintUmbrelAppYml(id);
+    // TODO lintDockerComposeYml(id)
+    // TODO exportsSh(id)
   }
   console.log(noLintingErrors ? pc.green("No linting errors found 🎉") : pc.red("Linting failed."));
 }
@@ -111,6 +113,6 @@ function printLintingError(
   severity: "error" | "warning" = "error"
 ) {
   const level =
-    severity === "error" ? pc.bgRed("ERROR") : pc.bgYellow("WARNING");
-  console.log(`[${level}] ${pc.bold(title)}: ${pc.italic(pc.gray(message))}`);
+    severity === "error" ? pc.bgRed(" ERROR ") : pc.bgYellow(" WARNING ");
+  console.log(`${level} ${pc.bold(title)}: ${pc.italic(pc.gray(message))}`);
 }
