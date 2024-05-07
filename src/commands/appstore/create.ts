@@ -15,7 +15,8 @@ import color from "picocolors";
 import git from "isomorphic-git";
 import http from "isomorphic-git/http/node/index.js";
 import Handlebars from "handlebars";
-import { isAppStoreDirectory } from "../../utils/appstore";
+import { isAppStoreDirectory } from "../../modules/appstore";
+import { __dirname } from "../../utils/fs";
 
 export async function create(name?: string) {
   if (await isAppStoreDirectory()) {

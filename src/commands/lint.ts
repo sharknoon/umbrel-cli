@@ -1,24 +1,23 @@
 import fs from "node:fs/promises";
 import YAML from "yaml";
-import {
-  getAllAppStoreAppIds,
-  isOfficialAppStoreDirectory,
-} from "../utils/appstore";
 import { exists } from "../utils/fs";
 import umbrelAppStoreYmlSchema from "../schemas/appstore/umbrel-app-store.yml.schema";
-import umbrelAppYmlSchema from "../schemas/app/umbrel-app.yml.schema";
 import path from "node:path";
 import pc from "picocolors";
+import { getAppIds, getAppStoreType } from "../modules/appstore";
+import { getUmbrelAppYmls } from "../modules/apps";
+import umbrelAppYmlSchema from "../schemas/app/umbrel-app.yml.schema";
 
 export async function lint() {
   let noLintingErrors = true;
   noLintingErrors = (await lintUmbrelAppStoreYml()) && noLintingErrors;
   noLintingErrors = (await lintReadmeMd()) && noLintingErrors;
-  for (const id of await getAllAppStoreAppIds()) {
-    noLintingErrors = await lintUmbrelAppYml(id) && noLintingErrors;
+  for (const id of await getAppIds()) {
+    noLintingErrors = (await lintUmbrelAppYml(id.name)) && noLintingErrors;
     // TODO lintDockerComposeYml(id)
     // TODO exportsSh(id)
   }
+  lintUmbrelAppYmlDuplications();
   console.log(
     noLintingErrors
       ? pc.green("No linting errors found 🎉")
@@ -27,7 +26,7 @@ export async function lint() {
 }
 
 async function lintUmbrelAppStoreYml(): Promise<boolean> {
-  if (await isOfficialAppStoreDirectory()) {
+  if ((await getAppStoreType()) === "official") {
     return true;
   }
   console.log("Checking umbrel-app-store.yml");
@@ -113,12 +112,33 @@ async function lintUmbrelAppYml(id: string): Promise<boolean> {
   return true;
 }
 
+async function lintUmbrelAppYmlDuplications(): Promise<boolean> {
+  let noLintingErrors = true;
+  const appYmls = await getUmbrelAppYmls({ onlyValid: false });
+  // Check if a port is used by multiple apps
+  const ports = new Map<number, string>();
+  for (const appYml of appYmls) {
+    if (ports.has(appYml.port)) {
+      noLintingErrors = false;
+      const existintAppName = ports.get(appYml.port);
+      printLintingError(
+        `Port ${appYml.port} is already used by ${existintAppName}.`,
+        `Each app must use a unique port.`
+      );
+    }
+    ports.set(appYml.port, appYml.name);
+  }
+  return !noLintingErrors;
+}
+
 function printLintingError(
   title: string,
   message: string,
   severity: "error" | "warning" = "error"
 ) {
   const level =
-    severity === "error" ? pc.bgRed(" ERROR ") : pc.bgYellow(" WARNING ");
+    severity === "error"
+      ? pc.bgRed(pc.bold(" ERROR "))
+      : pc.bgYellow(pc.bold(" WARNING "));
   console.log(`${level} ${pc.bold(title)}: ${pc.italic(pc.gray(message))}`);
 }

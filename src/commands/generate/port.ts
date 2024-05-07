@@ -1,15 +1,12 @@
-import {
-  getAllAppStorePorts,
-  isCommunityAppStoreDirectory,
-} from "../../utils/appstore";
-import { getAllOfficialAppStorePorts } from "../../utils/global";
+import { getUmbrelAppYmls } from "../../modules/apps";
+import { getAppStoreType } from "../../modules/appstore";
 import { getRandomInt } from "../../utils/math";
 
 export async function port() {
-  const officialPorts = await getAllOfficialAppStorePorts();
+  const officialPorts = (await getUmbrelAppYmls()).map((app) => app.port);
   let communityPorts: number[] = [];
-  if (await isCommunityAppStoreDirectory()) {
-    communityPorts = await getAllAppStorePorts();
+  if ((await getAppStoreType()) === "community") {
+    communityPorts = (await getUmbrelAppYmls()).map((app) => app.port);
   }
   const ports = officialPorts.concat(communityPorts);
 

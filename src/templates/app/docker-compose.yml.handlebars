@@ -15,6 +15,12 @@ services:
       APP_HOST: <web-container-dns-name>
       # The port your app's web server is listening on
       APP_PORT: <web-container-port-number>
+      # If you want to disable the app proxy, you can set this to 'false'
+      # Disabling the app proxy will make your app accessible without the Umbrel authentication
+      #PROXY_AUTH_ADD: "true"
+      # If you only want to allow public access to some parts of the app, you can use white/blacklists Here
+      #PROXY_AUTH_WHITELIST: "*"
+      #PROXY_AUTH_BLACKLIST: "/admin/*"
   
   web:
     # Note: always use the image digest to ensure reproducability across installations

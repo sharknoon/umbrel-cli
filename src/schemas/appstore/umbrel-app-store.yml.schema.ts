@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Reference: https://github.com/getumbrel/umbrel/blob/master/packages/umbreld/source/modules/apps/schema.ts
-export default z.object({
+const umbrelAppStoreYml = z.object({
   id: z
     .string()
     .min(1)
@@ -16,3 +16,7 @@ export default z.object({
     }),
   name: z.string().min(1).max(50),
 });
+
+export type UmbrelAppStore = z.infer<typeof umbrelAppStoreYml>;
+
+export default umbrelAppStoreYml;

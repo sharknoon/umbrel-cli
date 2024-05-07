@@ -4,11 +4,11 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { create as createAppStore } from "./commands/appstore/create";
 import { create as createApp } from "./commands/app/create";
-import { isAppStoreDirectory } from "./utils/appstore";
 import pc from "picocolors";
 import { intro } from "@clack/prompts";
 import { lint } from "./commands/lint";
 import { port } from "./commands/generate/port";
+import { isAppStoreDirectory } from "./modules/appstore";
 
 await yargs(hideBin(process.argv))
   .scriptName("umbrel")
@@ -70,7 +70,7 @@ await yargs(hideBin(process.argv))
   .parseAsync();
 
 async function requireAppStoreDirectory() {
-  if (!(await isAppStoreDirectory())) {
+  if (!isAppStoreDirectory) {
     console.log(
       pc.red(pc.bold("You are not in an Umbrel App Store directory!"))
     );

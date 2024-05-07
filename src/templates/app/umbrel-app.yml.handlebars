@@ -9,11 +9,7 @@ manifestVersion: 1.1
 # The ID should be unique within the app store and contain only alphabets (a-z) and dashes (-).
 # It should be human readable and recognizable.
 # The value "umbrel-app-store" and the id of your Community App Store are reserved and cannot be used.
-{{#if isOfficialAppStore}}
 id: {{appId}}
-{{else}}
-id: {{appStoreId}}-{{appId}}
-{{/if}}
 
 # Disabled apps are not shown in the app store. This is useful for apps that are still in development. (optional)
 #disabled: false

@@ -1,13 +1,10 @@
+import path from "node:path";
 import { z } from "zod";
 import { isValidUrl } from "../../utils/net";
-import { isCommunityAppStoreDirectory } from "../../utils/appstore";
-import { getAllOfficialAppStorePorts } from "../../utils/global";
-import path from "node:path";
-
-const usedPorts = await getAllOfficialAppStorePorts();
+import { getAppStoreType } from "../../modules/appstore";
 
 // Reference: https://github.com/getumbrel/umbrel/blob/master/packages/umbreld/source/modules/apps/schema.ts
-export default z
+const umbrelAppYml = z
   .object({
     // https://github.com/colinhacks/zod/pull/2980#issuecomment-2073499456
     manifestVersion: z
@@ -27,7 +24,7 @@ export default z
       .string()
       .refine(
         async (icon) => {
-          if (await isCommunityAppStoreDirectory()) {
+          if ((await getAppStoreType()) === "official") {
             if (!icon) return false;
             return isValidUrl(icon);
           } else {
@@ -55,9 +52,7 @@ export default z
       "developer",
     ]),
     version: z.string().min(1),
-    port: z.number().min(0).max(65535).refine((port) => usedPorts.filter(p => p === port).length === 1, {
-      message: "The port is already in use by another app.",
-    }),
+    port: z.number().min(0).max(65535),
     description: z.string().min(1).max(5000),
     developer: z.coerce.string().min(1).max(50),
     website: z.string().url(),
@@ -69,7 +64,7 @@ export default z
       .string()
       .refine(
         async (image) => {
-          if (await isCommunityAppStoreDirectory()) {
+          if ((await getAppStoreType()) === "community") {
             return isValidUrl(image);
           } else {
             return isValidUrl(image) || path.parse(image).ext !== "";
@@ -77,7 +72,7 @@ export default z
         },
         {
           message: `The gallery images must be a ${
-            (await isCommunityAppStoreDirectory())
+            (await getAppStoreType()) === "community"
               ? "valid URL"
               : "path to a file"
           }.`,
@@ -107,3 +102,7 @@ export default z
   .refine((data) => !data.dependencies?.includes(data.id), {
     message: "Dependencies can't include its own app id",
   });
+
+export type UmbrelApp = z.infer<typeof umbrelAppYml>;
+
+export default umbrelAppYml;
