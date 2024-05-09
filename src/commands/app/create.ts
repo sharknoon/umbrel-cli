@@ -54,7 +54,7 @@ export async function create(name?: string, dir: string = path.resolve()) {
         confirm({
           message:
             "Does your app need to share environment variables with other apps? This is useful, for example, if another app needs to access an API provided by your app.",
-          initialValue: false, 
+          initialValue: false,
         }),
     },
     {
@@ -118,8 +118,14 @@ export async function create(name?: string, dir: string = path.resolve()) {
   }
 
   note(
-    ` - fill out the ${color.cyan("umbrel-app.yml")} file
- - add your containers to the docker-compose.yml`,
+    ` - fill out the ${color.cyan(color.bold("umbrel-app.yml"))}
+ - add your containers to the ${color.cyan(color.bold("docker-compose.yml"))}${
+      needsExportSh
+        ? `\n - expose your environment variables for other apps in ${color.cyan(
+            color.bold("exports.sh")
+          )}`
+        : ""
+    }`,
     "Next steps"
   );
 

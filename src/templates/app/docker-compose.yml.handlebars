@@ -12,8 +12,10 @@ services:
       # <app-store-id>-<app-id>_<web-container-name>_1
       # e.g. 'sparkles-btc-rpc-explorer_web_1'
       # Note that the '_1' at the end is needed
-      APP_HOST: <web-container-dns-name>
+      APP_HOST: {{appId}}_web_1
       # The port your app's web server is listening on
+      # Note: This does not need to be the same port as in the umbrel-app.yml
+      # This port is only accessible from within the Docker network
       APP_PORT: <web-container-port-number>
       # If you want to disable the app proxy, you can set this to 'false'
       # Disabling the app proxy will make your app accessible without the Umbrel authentication
@@ -36,8 +38,8 @@ services:
     # volumes:
       # Uncomment to mount your data directories inside
       # the Docker container for storing persistent data
-      # - ${APP_DATA_DIR}/foo:/foo
-      # - ${APP_DATA_DIR}/bar:/bar
+      # - ${APP_DATA_DIR}/app/foo:/foo
+      # - ${APP_DATA_DIR}/app/bar:/bar
       #
       # Uncomment to mount LND's data directory as read-only
       # inside the Docker container at path /lnd

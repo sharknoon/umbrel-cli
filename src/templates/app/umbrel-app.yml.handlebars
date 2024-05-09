@@ -4,7 +4,7 @@
 # However, if your app requires the use of hooks (scripts that are run at different stages of the app lifecycle), you need to use version 1.1.
 # Hooks allow you to perform custom actions at different stages of the app's lifecycle, such as before the app starts (pre-start), after the
 # app installs (post-install), and more. If your app doesn't need to use hooks, you can stick with manifest version 1.
-manifestVersion: 1.1
+manifestVersion: 1
 
 # The ID should be unique within the app store and contain only alphabets (a-z) and dashes (-).
 # It should be human readable and recognizable.
@@ -37,6 +37,8 @@ category: files
 version: "1.0.0"
 
 # The port your app is reachable from a webbrowser. This should be a number between 1024 and 65535.
+# Note: This port does not need to be the same as the APP_PORT in the docker-compose.yml.
+# This port will be exposed to the user.
 port: 3000
 
 # A description of your app. This will be shown in the App Store.

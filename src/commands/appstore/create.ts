@@ -84,7 +84,9 @@ export async function create(name?: string) {
 
   note(
     `Create your first app with\n${color.cyan(
-      color.bold("umbrel app create")
+      color.bold(
+        `cd ${path.relative(path.resolve(), pathToAppStore)}\numbrel app create`
+      )
     )}`,
     "Next steps"
   );
