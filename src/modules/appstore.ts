@@ -5,6 +5,7 @@ import umbrelAppStoreYmlSchema, {
   UmbrelAppStore,
 } from "../schemas/appstore/umbrel-app-store.yml.schema";
 import { exists } from "../utils/fs";
+import { officialAppStoreDir } from "./paths";
 
 const appStoreTypeCache = new Map<
   string,
@@ -17,21 +18,22 @@ export async function getAppStoreType(
   if (appStoreTypeCache.has(dir)) {
     return appStoreTypeCache.get(dir);
   }
+
   if (await exists(path.join(dir, "umbrel-app-store.yml"))) {
     appStoreTypeCache.set(dir, "community");
     return "community";
   }
+
+  const officialAppStoreAppIds = await getAppIds(officialAppStoreDir);
   const appIds = await getAppIds(dir);
-  if (appIds.length === 0) {
-    appStoreTypeCache.set(dir, undefined);
-    return undefined;
-  }
+  // check if dir contains at least all the apps from the official app store
   if (
-    await exists(path.join(appIds[0].path, appIds[0].name, "umbrel-app.yml"))
+    officialAppStoreAppIds.every((e) => appIds.some((a) => a.name === e.name))
   ) {
     appStoreTypeCache.set(dir, "official");
     return "official";
   }
+
   appStoreTypeCache.set(dir, undefined);
   return undefined;
 }
@@ -47,9 +49,7 @@ export async function isAppStoreDirectory(dir: string = path.resolve()) {
 }
 
 const umbrelAppStoreYmlCache = new Map<string, UmbrelAppStore | undefined>();
-export async function getUmbrelAppStoreYml(
-  dir = path.resolve()
-) {
+export async function getUmbrelAppStoreYml(dir = path.resolve()) {
   dir = path.resolve(dir);
   const file = path.join(dir, "umbrel-app-store.yml");
   if (umbrelAppStoreYmlCache.has(file)) {

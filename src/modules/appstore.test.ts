@@ -44,7 +44,7 @@ describe("isAppStoreDirectory", () => {
 
 describe("getUmbrelAppStoreYml", () => {
   it("should return the parsed UmbrelAppStore object if the file exists", async () => {
-    const file = "tests/umbrel-community-app-store/umbrel-app-store.yml";
+    const file = "tests/umbrel-community-app-store";
     const result = await getUmbrelAppStoreYml(file);
     expect(result).toBeDefined();
   });
