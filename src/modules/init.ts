@@ -4,9 +4,11 @@ import git from "isomorphic-git";
 import http from "isomorphic-git/http/node/index.js";
 import { officialAppStoreDir } from "./paths";
 
-await cloneOfficialAppStore(officialAppStoreDir);
+export async function init() {
+  await cloneOfficialAppStore(officialAppStoreDir);
+}
 
-async function cloneOfficialAppStore(dir: string) {
+export async function cloneOfficialAppStore(dir: string) {
   const s = spinner();
   s.start("Pulling the official Umbrel App Store from GitHub");
   await fs.mkdir(dir, { recursive: true });

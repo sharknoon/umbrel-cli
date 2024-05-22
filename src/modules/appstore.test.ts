@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  getAppIds,
   getAppStoreType,
   getUmbrelAppStoreYml,
   isAppStoreDirectory,
@@ -22,6 +23,34 @@ describe("getAppStoreType", () => {
     const dir = "";
     const result = await getAppStoreType(dir);
     expect(result).toBeUndefined();
+  });
+});
+
+describe("getAppIds", () => {
+  it("should return an array of app IDs in the specified directory", async () => {
+    const dir = "tests/umbrel-apps";
+    const result = await getAppIds(dir);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    result.forEach((appId) => {
+      expect(appId.name.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("should return an empty array if no app IDs are found in the specified directory", async () => {
+    const dir = "tests/empty-directory";
+    const result = await getAppIds(dir);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(0);
+  });
+
+  it("should throw an error if the specified directory does not exist", async () => {
+    const dir = "non-existent-directory";
+    try {
+      await getAppIds(dir);
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
   });
 });
 

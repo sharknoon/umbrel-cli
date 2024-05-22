@@ -19,4 +19,5 @@ export async function setup() {
     singleBranch: true,
     depth: 1,
   });
+  await fs.mkdir("tests/empty-directory", { recursive: true });
 }
