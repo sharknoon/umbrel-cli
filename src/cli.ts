@@ -9,10 +9,6 @@ import { intro } from "@clack/prompts";
 import { lint } from "./commands/lint";
 import { port } from "./commands/generate/port";
 import { isAppStoreDirectory } from "./modules/appstore";
-import { init } from "./modules/init";
-
-// General initializations like cloning the official Umbrel App Store
-await init();
 
 await yargs(hideBin(process.argv))
   .scriptName("umbrel")

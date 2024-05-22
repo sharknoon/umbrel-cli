@@ -1,9 +1,10 @@
 import * as esbuild from 'esbuild'
 
 await esbuild.build({
-  entryPoints: ['src/cli.ts', 'src/templates/**/*'],
+  entryPoints: ['src/**/*'],
   bundle: true,
-  minify: false,
+  minify: true,
+  splitting: true,
   outdir: 'dist',
   platform: 'node',
   format: 'esm',

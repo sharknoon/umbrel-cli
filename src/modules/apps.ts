@@ -12,9 +12,8 @@ export async function getUmbrelAppYmls(
   options: { dir?: string; onlyValid?: boolean } = {}
 ): Promise<UmbrelApp[]> {
   let { dir, onlyValid } = options;
-  dir = dir ?? path.resolve();
+  dir = path.resolve(dir ?? "");
   onlyValid = onlyValid ?? false;
-  dir = path.resolve(dir);
   if (onlyValid && umbrelAppYmlsCache.has(dir)) {
     return umbrelAppYmlsCache.get(dir) ?? [];
   } else if (!onlyValid && potentiallyInvalidUmbrelAppYmlsCache.has(dir)) {
