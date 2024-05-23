@@ -28,7 +28,7 @@ export async function getAppStoreType(
   const appIds = await getAppIds(dir);
   // check if dir contains at least all the apps from the official app store
   if (
-    officialAppStoreAppIds.every((e) => appIds.some((a) => a.name === e.name))
+    officialAppStoreAppIds.every((oid) => appIds.some((id) => id === oid))
   ) {
     appStoreTypeCache.set(dir, "official");
     return "official";
@@ -38,9 +38,11 @@ export async function getAppStoreType(
   return undefined;
 }
 
-export async function getAppIds(dir: string = path.resolve()) {
+export async function getAppIds(dir: string = path.resolve()): Promise<string[]> {
   const appIds = await fs.readdir(dir, { withFileTypes: true });
-  return appIds.filter((e) => e.isDirectory() && !e.name.startsWith("."));
+  return appIds
+    .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+    .map((e) => e.name);
 }
 
 export async function isAppStoreDirectory(dir: string = path.resolve()) {

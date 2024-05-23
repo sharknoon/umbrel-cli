@@ -33,7 +33,7 @@ describe("getAppIds", () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
     result.forEach((appId) => {
-      expect(appId.name.length).toBeGreaterThan(0);
+      expect(appId.length).toBeGreaterThan(0);
     });
   });
 

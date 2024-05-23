@@ -4,17 +4,20 @@ import { exists } from "../utils/fs";
 import umbrelAppStoreYmlSchema from "../schemas/appstore/umbrel-app-store.yml.schema";
 import path from "node:path";
 import pc from "picocolors";
+import Ajv from "ajv";
+import addFormats from "ajv-formats";
 import { getAppIds, getAppStoreType } from "../modules/appstore";
 import { getUmbrelAppYmls } from "../modules/apps";
 import umbrelAppYmlSchema from "../schemas/app/umbrel-app.yml.schema";
+import dockerComposeYmlSchema from "../schemas/app/docker-compose.yml.schema.json";
 
 export async function lint() {
   let noLintingErrors = true;
   noLintingErrors = (await lintUmbrelAppStoreYml()) && noLintingErrors;
   noLintingErrors = (await lintReadmeMd()) && noLintingErrors;
   for (const id of await getAppIds()) {
-    noLintingErrors = (await lintUmbrelAppYml(id.name)) && noLintingErrors;
-    // TODO lintDockerComposeYml(id)
+    noLintingErrors = (await lintUmbrelAppYml(id)) && noLintingErrors;
+    noLintingErrors = (await lintDockerComposeYml(id)) && noLintingErrors;
     // TODO exportsSh(id)
   }
   lintUmbrelAppYmlDuplications();
@@ -129,6 +132,41 @@ async function lintUmbrelAppYmlDuplications(): Promise<boolean> {
     ports.set(appYml.port, appYml.name);
   }
   return !noLintingErrors;
+}
+
+async function lintDockerComposeYml(id: string): Promise<boolean> {
+  const dockerComposeYmlPath = path.resolve(id, "docker-compose.yml");
+  console.log(`Checking ${path.join(id, "docker-compose.yml")}`);
+  // Check if the file exists
+  if (!(await exists(dockerComposeYmlPath))) {
+    printLintingError(
+      "docker-compose.yml does not exist.",
+      `Every app needs a docker compose file called "docker-compose.yml" at the root of the app directory.`
+    );
+    return false;
+  }
+
+  // check if the file is valid yaml
+  let dockerComposeYml;
+  try {
+    dockerComposeYml = YAML.parse(await fs.readFile(dockerComposeYmlPath, "utf-8"));
+  } catch (e) {
+    printLintingError("docker-compose.yml is not a valid YAML file.", String(e));
+    return false;
+  }
+
+  // Check if the file is a valid docker compose file
+  const ajv = new Ajv({allowUnionTypes: true});
+  addFormats(ajv);
+  const validate = ajv.compile(dockerComposeYmlSchema);
+  const validAppYaml = validate(dockerComposeYml);
+  if (!validAppYaml) {
+    for (const err of validate.errors ?? []) {
+      printLintingError(err.instancePath, err.message ?? "Unknown error.")
+    }
+    return false;
+  }
+  return true;
 }
 
 function printLintingError(

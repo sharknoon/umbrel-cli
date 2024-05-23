@@ -16,7 +16,7 @@ export async function create(name?: string, dir: string = path.resolve()) {
   const appStoreId = (await getUmbrelAppStoreYml(dir))?.id;
   log.info(`Using the App Store at ${dir} to create a new app.`);
 
-  const takenAppIds = (await getAppIds()).map((app) => app.name);
+  const takenAppIds = await getAppIds();
 
   let defaultName = name || "my-cool-app";
   if (appStoreType === "community") {
