@@ -77,6 +77,8 @@ await yargs(hideBin(process.argv))
       await port(argv.w);
     }
   )
+  .alias("v", "version")
+  .alias("h", "help")
   .demandCommand(1)
   .strict()
   .parseAsync()
