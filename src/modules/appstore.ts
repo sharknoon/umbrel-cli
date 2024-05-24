@@ -5,7 +5,7 @@ import umbrelAppStoreYmlSchema from "../schemas/appstore/umbrel-app-store.yml.sc
 import { exists } from "../utils/fs";
 import { officialAppStoreDir } from "./paths";
 import git from "isomorphic-git";
-import http from "isomorphic-git/http/node";
+import http from "isomorphic-git/http/node/index.js";
 
 const appStoreTypeCache = new Map<
   string,

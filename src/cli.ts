@@ -69,7 +69,7 @@ await yargs(hideBin(process.argv))
     }
   )
   .command(
-    "generate port",
+    "port generate",
     "Generates a random unused port number",
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     () => {},
