@@ -1,52 +1,41 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import YAML from "yaml";
-import umbrelAppYmlSchema, {
-  UmbrelApp,
-} from "../schemas/app/umbrel-app.yml.schema";
+import umbrelAppYmlSchema from "../schemas/app/umbrel-app.yml.schema";
 import { isAppStoreDirectory } from "./appstore";
 
-const umbrelAppYmlsCache = new Map<string, UmbrelApp[]>();
-const potentiallyInvalidUmbrelAppYmlsCache = new Map<string, UmbrelApp[]>();
 export async function getUmbrelAppYmls(
-  options: { dir?: string; onlyValid?: boolean } = {}
-): Promise<UmbrelApp[]> {
-  let { dir, onlyValid } = options;
-  dir = path.resolve(dir ?? "");
-  onlyValid = onlyValid ?? false;
-  if (onlyValid && umbrelAppYmlsCache.has(dir)) {
-    return umbrelAppYmlsCache.get(dir) ?? [];
-  } else if (!onlyValid && potentiallyInvalidUmbrelAppYmlsCache.has(dir)) {
-    return potentiallyInvalidUmbrelAppYmlsCache.get(dir) ?? [];
+  cwd: string
+) {
+  const rawUmbrelAppYmls = await getRawUmbrelAppYmls(cwd);
+  const umbrelAppYmls = [];
+  for (const rawUmbrelAppYml of rawUmbrelAppYmls) {
+      const schema = await umbrelAppYmlSchema(cwd);
+      const result = await schema.safeParseAsync(rawUmbrelAppYml);
+      if (result.success) {
+        umbrelAppYmls.push(result.data);
+      }
+    
   }
+  return umbrelAppYmls;
+}
 
-  if (!(await isAppStoreDirectory(dir))) {
+export async function getRawUmbrelAppYmls(cwd: string) {
+  if (!(await isAppStoreDirectory(cwd))) {
     return [];
   }
-  const appIds = await fs.readdir(dir, {
+  const appIds = await fs.readdir(cwd, {
     withFileTypes: true,
     recursive: true,
   });
-  const umbrelAppYmls: UmbrelApp[] = [];
-  const potentiallyInvalidUmbrelAppYmls: UmbrelApp[] = [];
+  const rawUmbrelAppYmls: unknown[] = [];
   for (const appId of appIds) {
     if (appId.name !== "umbrel-app.yml") {
       continue;
     }
     const file = path.resolve(appId.path, appId.name);
     const yml = YAML.parse(await fs.readFile(file, "utf-8"));
-    potentiallyInvalidUmbrelAppYmls.push(yml);
-    if (onlyValid) {
-      const result = await umbrelAppYmlSchema.safeParseAsync(yml);
-      if (result.success) {
-        umbrelAppYmls.push(result.data);
-      }
-    }
+    rawUmbrelAppYmls.push(yml);
   }
-  umbrelAppYmlsCache.set(dir, umbrelAppYmls);
-  potentiallyInvalidUmbrelAppYmlsCache.set(
-    dir,
-    potentiallyInvalidUmbrelAppYmls
-  );
-  return onlyValid ? umbrelAppYmls : potentiallyInvalidUmbrelAppYmls;
+  return rawUmbrelAppYmls;
 }

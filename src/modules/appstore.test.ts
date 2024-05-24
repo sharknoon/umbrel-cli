@@ -20,7 +20,7 @@ describe("getAppStoreType", () => {
   });
 
   it("should return undefined if neither 'umbrel-app-store.yml' nor 'umbrel-app.yml' exists", async () => {
-    const dir = "";
+    const dir = ".";
     const result = await getAppStoreType(dir);
     expect(result).toBeUndefined();
   });

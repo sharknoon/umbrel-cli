@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { dirname, resolve } from 'path';
 
 /**
  * Checks if a path exists
@@ -8,9 +8,9 @@ import { dirname } from 'path';
  * @param path A path to a folder or a file e.g. /path/to/my/file.png
  * @returns true if the path exists, false otherwise
  */
-export async function exists(path: string): Promise<boolean> {
+export async function exists(...path: string[]): Promise<boolean> {
   try {
-    await fs.access(path, fs.constants.F_OK);
+    await fs.access(resolve(...path), fs.constants.F_OK);
     return true;
   } catch {
     return false;

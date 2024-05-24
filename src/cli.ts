@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import path from "node:path";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { create as createAppStore } from "./commands/appstore/create";
@@ -8,10 +9,21 @@ import pc from "picocolors";
 import { intro } from "@clack/prompts";
 import { lint } from "./commands/lint";
 import { port } from "./commands/generate/port";
-import { isAppStoreDirectory } from "./modules/appstore";
+import { cloneUmbrelAppsRepository, isAppStoreDirectory } from "./modules/appstore";
+import { officialAppStoreDir } from "./modules/paths";
+
+await cloneUmbrelAppsRepository(officialAppStoreDir);
 
 await yargs(hideBin(process.argv))
   .scriptName("umbrel")
+  .option("w", {
+    alias: "working-directory",
+    default: process.cwd(),
+    describe:
+      "The working directory of this cli, to generate relative paths from",
+    type: "string",
+    coerce: (cwd) => path.resolve(cwd),
+  })
   .command(
     "appstore create [name]",
     "Initalizes a new Umbrel App Store (official or community)",
@@ -26,7 +38,7 @@ await yargs(hideBin(process.argv))
     async (argv) => {
       console.clear();
       intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App Store "))}`);
-      await createAppStore(argv.name as string | undefined);
+      await createAppStore(argv.w, argv.name as string | undefined);
     }
   )
   .command(
@@ -42,8 +54,8 @@ await yargs(hideBin(process.argv))
     async (argv) => {
       console.clear();
       intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App "))}`);
-      await requireAppStoreDirectory();
-      await createApp(argv.name as string | undefined);
+      await requireAppStoreDirectory(argv.w);
+      await createApp(argv.w, argv.name as string | undefined);
     }
   )
   .command(
@@ -51,9 +63,9 @@ await yargs(hideBin(process.argv))
     "Lints the current Umbrel App Store and all apps in it",
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     () => {},
-    async () => {
-      await requireAppStoreDirectory();
-      await lint();
+    async (argv) => {
+      await requireAppStoreDirectory(argv.w);
+      await lint(argv.w);
     }
   )
   .command(
@@ -61,8 +73,8 @@ await yargs(hideBin(process.argv))
     "Generates a random unused port number",
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     () => {},
-    async () => {
-      await port();
+    async (argv) => {
+      await port(argv.w);
     }
   )
   .demandCommand(1)
@@ -73,8 +85,8 @@ await yargs(hideBin(process.argv))
     process.exit(1);
   });
 
-async function requireAppStoreDirectory() {
-  if (!isAppStoreDirectory) {
+async function requireAppStoreDirectory(cwd: string) {
+  if (!isAppStoreDirectory(cwd)) {
     console.log(
       pc.red(pc.bold("You are not in an Umbrel App Store directory!"))
     );

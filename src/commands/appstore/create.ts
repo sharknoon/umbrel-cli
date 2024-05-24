@@ -13,13 +13,12 @@ import {
 } from "@clack/prompts";
 import color from "picocolors";
 import git from "isomorphic-git";
-import http from "isomorphic-git/http/node/index.js";
 import Handlebars from "handlebars";
-import { isAppStoreDirectory } from "../../modules/appstore";
+import { cloneUmbrelAppsRepository, isAppStoreDirectory } from "../../modules/appstore";
 import { __dirname } from "../../utils/fs";
 
-export async function create(name?: string) {
-  if (await isAppStoreDirectory()) {
+export async function create(cwd: string, name?: string) {
+  if (await isAppStoreDirectory(cwd)) {
     note(
       `  Get started by creating a new app using: ${color.cyan(
         color.bold("umbrel app create")
@@ -44,7 +43,7 @@ export async function create(name?: string) {
       if (value[0] !== ".") return "Please enter a relative path.";
       if (!/^\.(?:\/[a-z]+(?:-[a-z]+)*)+$/.test(value))
         return "Please enter a valid path.";
-      if (existsSync(path.resolve(value)))
+      if (existsSync(path.resolve(cwd, value)))
         return "The directory already exists. Please choose a different path.";
       return undefined;
     },
@@ -53,7 +52,7 @@ export async function create(name?: string) {
     cancel("Operation cancelled.");
     process.exit(0);
   }
-  pathToAppStore = path.resolve(pathToAppStore);
+  pathToAppStore = path.resolve(cwd, pathToAppStore);
 
   const result = await select({
     message: "Which type of App Store would you like to initialize?",
@@ -96,21 +95,6 @@ export async function create(name?: string) {
       color.cyan("https://github.com/sharknoon/umbrel-cli/issues")
     )}`
   );
-}
-
-async function cloneUmbrelAppsRepository(dir: string) {
-  const s = spinner();
-  s.start("Pulling the official Umbrel App Store from GitHub");
-  await fs.mkdir(dir, { recursive: true });
-  await git.clone({
-    fs,
-    http,
-    dir,
-    url: "https://github.com/getumbrel/umbrel-apps.git",
-    depth: 1,
-    singleBranch: true,
-  });
-  s.stop("Finished pulling the official Umbrel App Store");
 }
 
 async function createCommunityAppStore(dir: string) {

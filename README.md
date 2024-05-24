@@ -69,6 +69,15 @@ TODO image
 - [x] 🕵️ Linting apps and appstores using `umbrel lint`
 - [ ] 🧪 Testing an app using `umbrel test <appid>`
 
+## Development
+
+To build and run the Umbrel CLI, simply clone this repository and run the following commands:
+
+```bash
+npm install
+npm run dev -- -- --help
+```
+
 ## Run Umbrel OS
 
 To test your Umbrel apps, you need to run Umbrel OS on your machine.

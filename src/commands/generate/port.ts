@@ -3,17 +3,17 @@ import { getAppStoreType } from "../../modules/appstore";
 import { officialAppStoreDir } from "../../modules/paths";
 import { getRandomInt } from "../../utils/math";
 
-export async function port() {
-  const port = await generatePort();
+export async function port(cwd: string) {
+  const port = await generatePort(cwd);
   console.log(port);
 }
 
-export async function generatePort(): Promise<number> {
-  const officialUmbrelAppYmls = await getUmbrelAppYmls({ dir: officialAppStoreDir });
+export async function generatePort(cwd: string): Promise<number> {
+  const officialUmbrelAppYmls = await getUmbrelAppYmls(officialAppStoreDir);
   const officialPorts = officialUmbrelAppYmls.map((app) => app.port);
   let communityPorts: number[] = [];
-  if ((await getAppStoreType()) === "community") {
-    communityPorts = (await getUmbrelAppYmls()).map((app) => app.port);
+  if ((await getAppStoreType(cwd)) === "community") {
+    communityPorts = (await getUmbrelAppYmls(cwd)).map((app) => app.port);
   }
   const allPorts = officialPorts.concat(communityPorts);
 

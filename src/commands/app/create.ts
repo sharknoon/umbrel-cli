@@ -10,13 +10,13 @@ import {
 } from "../../modules/appstore";
 import { __dirname } from "../../utils/fs";
 
-export async function create(name?: string, dir: string = path.resolve()) {
+export async function create(cwd: string, name?: string) {
   // Create or load the App Store
-  const appStoreType = await getAppStoreType(dir);
-  const appStoreId = (await getUmbrelAppStoreYml(dir))?.id;
-  log.info(`Using the App Store at ${dir} to create a new app.`);
+  const appStoreType = await getAppStoreType(cwd);
+  const appStoreId = (await getUmbrelAppStoreYml(cwd))?.id;
+  log.info(`Using the App Store at ${cwd} to create a new app.`);
 
-  const takenAppIds = await getAppIds();
+  const takenAppIds = await getAppIds(cwd);
 
   let defaultName = name || "my-cool-app";
   if (appStoreType === "community") {
@@ -68,7 +68,7 @@ export async function create(name?: string, dir: string = path.resolve()) {
   );
 
   // Create the app directory
-  const appDir = path.resolve(dir, appId);
+  const appDir = path.resolve(cwd, appId);
   await fs.mkdir(appDir, { recursive: true });
 
   // Create umbrel-app.yml
