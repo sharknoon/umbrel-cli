@@ -1,7 +1,7 @@
 import path from "node:path";
 import { z } from "zod";
-import { isValidUrl } from "../../utils/net";
-import { getAppStoreType } from "../../modules/appstore";
+import { isValidUrl } from "../utils/net";
+import { getAppStoreType } from "../modules/appstore";
 
 export default async function umbrelAppYmlSchema(cwd: string) {
   // Reference: https://github.com/getumbrel/umbrel/blob/master/packages/umbreld/source/modules/apps/schema.ts
@@ -80,17 +80,12 @@ export default async function umbrelAppYmlSchema(cwd: string) {
           }
         )
         .array(),
-      releaseNotes: z.string().min(0).max(5000).optional().or(z.literal("")),
-      dependencies: z.string().array().optional(),
+      releaseNotes: z.string().min(0).max(5000),
+      dependencies: z.string().array(),
       permissions: z.enum(["STORAGE_DOWNLOADS"]).array().optional(),
       path: z
         .string()
-        .optional()
-        .or(z.literal(""))
-        .refine((path) => {
-          if (!path) return true;
-          return isValidUrl(`https://example.com${path}`);
-        }),
+        .refine((path) => isValidUrl(`https://example.com${path}`)),
       defaultUsername: z.string().optional().or(z.literal("")),
       defaultPassword: z.string().optional().or(z.literal("")),
       deterministicPassword: z.boolean().optional(),

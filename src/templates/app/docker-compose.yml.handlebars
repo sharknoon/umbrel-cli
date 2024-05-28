@@ -27,6 +27,9 @@ services:
   web:
     # Note: always use the image digest to ensure reproducability across installations
     image: <docker-image>:<tag>@sha256:<digest>
+    # Reducing the ownership/permissions to the umbrel user would be ideal from an app sandbox point of view.
+    # But it might not be possible for all apps to run as a non-root user!
+    #user: "1000:1000"
     restart: on-failure
     stop_grace_period: 1m
     # ports:

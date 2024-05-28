@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
-import umbrelAppStoreYmlSchema from "../schemas/appstore/umbrel-app-store.yml.schema";
+import umbrelAppStoreYmlSchema from "../schemas/umbrel-app-store.yml.schema";
 import { exists } from "../utils/fs";
 import { officialAppStoreDir } from "./paths";
 import git from "isomorphic-git";

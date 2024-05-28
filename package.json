@@ -12,11 +12,12 @@
     "./dist"
   ],
   "scripts": {
-    "dev": "tsx src/cli.ts",
+    "dev": "npm run build && node dist/cli.js",
     "build": "rollup --config rollup.config.ts --configPlugin typescript",
     "test": "vitest run",
     "lint": "eslint .",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "schema": "json2ts \"src/schemas/*.json\" src/schemas"
   },
   "repository": {
     "type": "git",
@@ -44,10 +45,10 @@
     "@types/yargs": "^17.0.32",
     "eslint": "^8.57.0",
     "globals": "^15.3.0",
+    "json-schema-to-typescript": "^14.0.4",
     "rollup": "^4.18.0",
     "rollup-plugin-copy": "^3.5.0",
     "tslib": "^2.6.2",
-    "tsx": "^4.11.0",
     "typescript": "^5.4.5",
     "typescript-eslint": "^7.8.0",
     "vitest": "^1.6.0"

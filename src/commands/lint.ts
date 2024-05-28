@@ -1,25 +1,25 @@
 import fs from "node:fs/promises";
 import YAML from "yaml";
 import { exists } from "../utils/fs";
-import umbrelAppStoreYmlSchema from "../schemas/appstore/umbrel-app-store.yml.schema";
+import umbrelAppStoreYmlSchema from "../schemas/umbrel-app-store.yml.schema";
 import path from "node:path";
 import pc from "picocolors";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { getAppIds, getAppStoreType } from "../modules/appstore";
 import { getRawUmbrelAppYmls } from "../modules/apps";
-import umbrelAppYmlSchema from "../schemas/app/umbrel-app.yml.schema";
-import dockerComposeYmlSchema from "../schemas/app/docker-compose.yml.schema.json";
+import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
+import dockerComposeYmlSchema from "../schemas/docker-compose.yml.schema.json";
 import { mockVariables } from "../modules/shell";
+import { ComposeSpecification } from "../schemas/docker-compose.yml.schema";
 
-export async function lint(cwd: string) {
+export async function lint(cwd: string): Promise<number> {
   let noLintingErrors = true;
   noLintingErrors = (await lintUmbrelAppStoreYml(cwd)) && noLintingErrors;
   noLintingErrors = (await lintReadmeMd(cwd)) && noLintingErrors;
   for (const id of await getAppIds(cwd)) {
     noLintingErrors = (await lintUmbrelAppYml(cwd, id)) && noLintingErrors;
     noLintingErrors = (await lintDockerComposeYml(cwd, id)) && noLintingErrors;
-    // TODO exportsSh(id)
   }
   lintUmbrelAppYmlDuplications(cwd);
   console.log(
@@ -27,6 +27,7 @@ export async function lint(cwd: string) {
       ? pc.green("No linting errors found 🎉")
       : pc.red("Linting failed.")
   );
+  return noLintingErrors ? 0 : 1;
 }
 
 async function lintUmbrelAppStoreYml(cwd: string): Promise<boolean> {
@@ -82,7 +83,6 @@ async function lintReadmeMd(cwd: string): Promise<boolean> {
     );
     return false;
   }
-  // TODO more linting
   return true;
 }
 
@@ -149,6 +149,9 @@ async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
 
 async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
   console.log(`Checking ${path.join(id, "docker-compose.yml")}`);
+
+  let result = true;
+
   const dockerComposeYmlPath = path.resolve(cwd, id, "docker-compose.yml");
   // Check if the file exists
   if (!(await exists(dockerComposeYmlPath))) {
@@ -164,9 +167,11 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
   const rawDockerComposeYmlMocked = await mockVariables(rawDockerComposeYml);
 
   // check if the file is valid yaml
-  let dockerComposeYml;
+  let dockerComposeYmlMocked: ComposeSpecification;
   try {
-    dockerComposeYml = YAML.parse(rawDockerComposeYmlMocked, { merge: true });
+    dockerComposeYmlMocked = YAML.parse(rawDockerComposeYmlMocked, {
+      merge: true,
+    });
   } catch (e) {
     printLintingError("docker-compose.yml is not a valid YAML file", String(e));
     return false;
@@ -175,8 +180,8 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
   // Check if the file is a valid docker compose file
   const ajv = new Ajv({ allowUnionTypes: true });
   addFormats(ajv);
-  const validate = ajv.compile(dockerComposeYmlSchema);
-  const validAppYaml = validate(dockerComposeYml);
+  const validate = ajv.compile<ComposeSpecification>(dockerComposeYmlSchema);
+  const validAppYaml = validate(dockerComposeYmlMocked);
   if (!validAppYaml) {
     for (const err of validate.errors ?? []) {
       printLintingError(err.instancePath, err.message ?? "Unknown error");
@@ -185,8 +190,75 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
   }
 
   // Check if empty folders with .gitkeep exist for every volume
+  // This doesn't work properly (no easy way to detect, if a volume mount is a file or a directory)
+  /*
+  const dockerComposeYml: ComposeSpecification = YAML.parse(
+    rawDockerComposeYml,
+    { merge: true }
+  );
+  const hostVolumeMounts = Object.keys(dockerComposeYml.services ?? {}).flatMap(
+    (service) => dockerComposeYml.services?.[service].volumes ?? []
+  );
+  const appDataPaths = new Set<string>();
+  for (const volume of hostVolumeMounts) {
+    if (typeof volume !== "string") {
+      continue;
+    }
+    const volumeMatch = volume.match(/^\$\{?APP_DATA_DIR\}?(.+?):.*$/);
+    if (!volumeMatch || !volumeMatch[1]) {
+      continue;
+    }
+    let appDataPath = path.normalize(volumeMatch[1]);
+    //process.stdout.write(appDataPath);
+    // In case the path is a file, remove the last path segment
+    if (appDataPath.split(path.sep).pop()?.includes(".") ?? false) {
+      appDataPath = path.dirname(appDataPath);
+    }
+    // If there is no directory left, skip
+    if (appDataPath === path.sep || appDataPath === ".") {
+      continue;
+    }
+    //console.log(" => " + appDataPath)
+    appDataPath = path.join(id, appDataPath);
+    appDataPaths.add(appDataPath);
+  }
+  for (const appDataPath of appDataPaths) {
+    if (!(await exists(path.join(cwd, appDataPath, ".gitkeep")))) {
+      printLintingError(
+        `Missing directory ${pc.cyan(appDataPath)} with ${pc.cyan(".gitkeep")}`,
+        `To ensure that the directory have the right permissions, create the directory and add a .gitkeep file in it to keep it in the git repository`
+      );
+    }
+  }
+  */
 
-  return true;
+  // Check if the image follows the naming convention
+  const services = Object.keys(dockerComposeYmlMocked.services ?? {});
+  for (const service of services) {
+    const image = dockerComposeYmlMocked.services?.[service].image;
+    if (!image) {
+      continue;
+    }
+    const imageMatch = image.match(/^(.+):(.+)@(.+)$/);
+    if (!imageMatch) {
+      printLintingError(
+        `Invalid image name ${pc.cyan(image)}`,
+        `Images should be named like ${pc.cyan("<name>:<version>@<sha256>")}`
+      );
+      result = false;
+    } else {
+      const [, version,] = imageMatch.slice(1);
+      if (version === "latest") {
+        printLintingError(
+          `Invalid image tag ${pc.cyan(version)}`,
+          `Images should not use the "latest" tag`,
+          "warning"
+        );
+      }
+    }
+  }
+
+  return result;
 }
 
 function printLintingError(

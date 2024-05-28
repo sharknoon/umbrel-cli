@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import YAML from "yaml";
-import umbrelAppYmlSchema from "../schemas/app/umbrel-app.yml.schema";
+import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 import { isAppStoreDirectory } from "./appstore";
 
 export async function getUmbrelAppYmls(

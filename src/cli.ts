@@ -65,7 +65,8 @@ await yargs(hideBin(process.argv))
     () => {},
     async (argv) => {
       await requireAppStoreDirectory(argv.w);
-      await lint(argv.w);
+      const result = await lint(argv.w);
+      process.exit(result);
     }
   )
   .command(
