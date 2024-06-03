@@ -21,7 +21,7 @@ export async function lint(cwd: string): Promise<number> {
     noLintingErrors = (await lintUmbrelAppYml(cwd, id)) && noLintingErrors;
     noLintingErrors = (await lintDockerComposeYml(cwd, id)) && noLintingErrors;
   }
-  lintUmbrelAppYmlDuplications(cwd);
+  noLintingErrors = (await lintUmbrelAppYmlDuplications(cwd)) && noLintingErrors;
   console.log(
     noLintingErrors
       ? pc.green("No linting errors found 🎉")
@@ -116,6 +116,18 @@ async function lintUmbrelAppYml(cwd: string, id: string): Promise<boolean> {
     });
     return false;
   }
+
+  // Check if the taglines do not end with a period (except for those with multiple periods in it)
+  if (
+    result.data.tagline.endsWith(".") &&
+    result.data.tagline.split(".").length === 2
+  ) {
+    printLintingError(
+      "Taglines should not end with a period",
+      result.data.tagline.split(".")[0] + pc.bold(pc.cyan("."))
+    );
+    return false;
+  }
   return true;
 }
 
@@ -144,7 +156,7 @@ async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
     }
     ports.set(appYml.port, appYml.name);
   }
-  return !noLintingErrors;
+  return noLintingErrors;
 }
 
 async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
@@ -247,7 +259,7 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
       );
       result = false;
     } else {
-      const [, version,] = imageMatch.slice(1);
+      const [, version] = imageMatch.slice(1);
       if (version === "latest") {
         printLintingError(
           `Invalid image tag ${pc.cyan(version)}`,
