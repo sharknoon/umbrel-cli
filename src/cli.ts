@@ -9,7 +9,11 @@ import pc from "picocolors";
 import { intro } from "@clack/prompts";
 import { lint } from "./commands/lint";
 import { port } from "./commands/generate/port";
-import { cloneUmbrelAppsRepository, isAppStoreDirectory } from "./modules/appstore";
+import { test } from "./commands/test";
+import {
+  cloneUmbrelAppsRepository,
+  isAppStoreDirectory,
+} from "./modules/appstore";
 import { officialAppStoreDir } from "./modules/paths";
 
 await cloneUmbrelAppsRepository(officialAppStoreDir);
@@ -76,6 +80,24 @@ await yargs(hideBin(process.argv))
     () => {},
     async (argv) => {
       await port(argv.w);
+    }
+  )
+  .command(
+    "test",
+    "Installs an app on Umbrel and executes it",
+    {
+      host: {
+        type: "string",
+        alias: "i",
+        default: "umbrel.local",
+        describe: "The hostname of your Umbrel",
+      },
+    },
+    async (argv) => {
+      // @ts-ignore
+      await requireAppStoreDirectory(argv.w);
+      // @ts-ignore
+      await test(argv.w, argv.host)
     }
   )
   .alias("v", "version")
