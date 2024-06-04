@@ -48,7 +48,7 @@ These files are being checked:
 - Validity of `umbrel-app-store.yml`
 - Existence of `README.me`
 - Validity of `<app>/umbrel-app.yml`
-- (WIP) Validity of `<app>/docker-compose.yml`
+- Validity of `<app>/docker-compose.yml`
 - (WIP) Validity of `<app>/exports.sh`
 
 TODO image
