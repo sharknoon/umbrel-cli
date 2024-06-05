@@ -23,7 +23,7 @@ This command initializes an App Store.
 
 `<name>` is an optional name for the App Store directory. When left empty, you get asked to provide one.
 
-![aumbrel appstore create](assets/appstore-create.gif?raw=true)
+![umbrel appstore create](assets/appstore-create.svg?raw=true)
 
 ### `umbrel app create <name>`
 
@@ -34,7 +34,7 @@ This command scaffoldes a new app. It needs to be invoked from inside an App Sto
 
 `<name>` is an optional name for the app directory. When left empty, you get asked to provide one.
 
-![aumbrel appstore create](assets/app-create.gif?raw=true)
+![umbrel app create](assets/app-create.svg?raw=true)
 
 ### `umbrel lint`
 
@@ -51,7 +51,7 @@ These files are being checked:
 - Validity of `<app>/docker-compose.yml`
 - (WIP) Validity of `<app>/exports.sh`
 
-![aumbrel appstore create](assets/lint.gif?raw=true)
+![umbrel lint](assets/lint.svg?raw=true)
 
 ### `umbrel port generate`
 
@@ -59,7 +59,7 @@ This command generates a new and not yet used port to be used inside one of your
 It checks against the ports from the official App Store and when executed from a Community App Store,
 also against those ports.
 
-![aumbrel appstore create](assets/port-generate.gif?raw=true)
+![umbrel port generate](assets/port-generate.svg?raw=true)
 
 ## Roadmap
 
