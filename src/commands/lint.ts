@@ -10,7 +10,7 @@ import { getAppIds, getAppStoreType } from "../modules/appstore";
 import { getRawUmbrelAppYmls } from "../modules/apps";
 import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 import dockerComposeYmlSchema from "../schemas/docker-compose.yml.schema.json";
-import { mockVariables } from "../modules/shell";
+import { mockVariables } from "../modules/mock";
 import { ComposeSpecification } from "../schemas/docker-compose.yml.schema";
 
 export async function lint(cwd: string): Promise<number> {

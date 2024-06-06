@@ -3,6 +3,8 @@ import { read } from "read";
 import Client from "ssh2-sftp-client";
 import pc from "picocolors";
 import { getAppIds, getUmbrelAppStoreYml } from "../modules/appstore";
+import { printAborted } from "../modules/console";
+import { exit } from "../modules/process";
 
 export async function test(cwd: string, id: string, host: string) {
   let appIds: string[] = await getAppIds(cwd);
@@ -33,7 +35,8 @@ export async function test(cwd: string, id: string, host: string) {
       replace: "*",
     });
   } catch {
-    console.log(pc.red(pc.bold("🚫 Aborted")));
+    printAborted();
+    await exit();
     return;
   }
 

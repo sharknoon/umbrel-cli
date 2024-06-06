@@ -15,6 +15,8 @@ import {
   isAppStoreDirectory,
 } from "./modules/appstore";
 import { officialAppStoreDir } from "./modules/paths";
+import { exit } from "./modules/process";
+import { printErrorOccured } from "./modules/console";
 
 await cloneUmbrelAppsRepository(officialAppStoreDir);
 
@@ -70,7 +72,7 @@ await yargs(hideBin(process.argv))
     async (argv) => {
       await requireAppStoreDirectory(argv.w);
       const result = await lint(argv.w);
-      process.exit(result);
+      await exit(result);
     }
   )
   .command(
@@ -110,9 +112,9 @@ await yargs(hideBin(process.argv))
   .demandCommand(1)
   .strict()
   .parseAsync()
-  .catch((error) => {
-    console.error("Oh noooo: " + error);
-    process.exit(1);
+  .catch(async (error) => {
+    printErrorOccured(error)
+    await exit(1);
   });
 
 async function requireAppStoreDirectory(cwd: string) {
@@ -124,10 +126,10 @@ async function requireAppStoreDirectory(cwd: string) {
     console.log(`  Please navigate to an Umbrel App Store directory`);
     console.log(
       `  or create a new one using ${pc.cyan(
-        pc.bold("umbrel appstore create [name]")
+        pc.bold("umbrel appstore create [id]")
       )}.`
     );
     console.log();
-    process.exit(1);
+    await exit(1);
   }
 }
