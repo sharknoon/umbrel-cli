@@ -11,6 +11,8 @@ import { lint } from "./commands/lint";
 import { port } from "./commands/generate/port";
 import { cloneUmbrelAppsRepository, isAppStoreDirectory } from "./modules/appstore";
 import { officialAppStoreDir } from "./modules/paths";
+import { exit } from "./modules/process";
+import { printErrorOccured } from "./modules/console";
 
 await cloneUmbrelAppsRepository(officialAppStoreDir);
 
@@ -25,29 +27,27 @@ await yargs(hideBin(process.argv))
     coerce: (cwd) => path.resolve(cwd),
   })
   .command(
-    "appstore create [name]",
+    "appstore create [id]",
     "Initalizes a new Umbrel App Store (official or community)",
     (yargs) => {
-      yargs.positional("name", {
+      yargs.positional("id", {
         type: "string",
         describe:
-          "The name of the App Store (only alphabets (a-z) and dashes (-))",
+          "The id of the App Store (only alphabets (a-z) and dashes (-))",
         default: "",
       });
     },
     async (argv) => {
-      console.clear();
-      intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App Store "))}`);
-      await createAppStore(argv.w, argv.name as string | undefined);
+      await createAppStore(argv.w, argv.id as string | undefined);
     }
   )
   .command(
-    "app create [name]",
+    "app create [id]",
     "Creates a new Umbrel App",
     (yargs) => {
-      yargs.positional("name", {
+      yargs.positional("id", {
         type: "string",
-        describe: "The name of the app (only alphabets (a-z) and dashes (-))",
+        describe: "The id of the app (only alphabets (a-z) and dashes (-))",
         default: "",
       });
     },
@@ -55,7 +55,7 @@ await yargs(hideBin(process.argv))
       console.clear();
       intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App "))}`);
       await requireAppStoreDirectory(argv.w);
-      await createApp(argv.w, argv.name as string | undefined);
+      await createApp(argv.w, argv.id as string | undefined);
     }
   )
   .command(
@@ -66,7 +66,7 @@ await yargs(hideBin(process.argv))
     async (argv) => {
       await requireAppStoreDirectory(argv.w);
       const result = await lint(argv.w);
-      process.exit(result);
+      await exit(result);
     }
   )
   .command(
@@ -83,13 +83,13 @@ await yargs(hideBin(process.argv))
   .demandCommand(1)
   .strict()
   .parseAsync()
-  .catch((error) => {
-    console.error("Oh noooo: " + error);
-    process.exit(1);
+  .catch(async (error) => {
+    printErrorOccured(error)
+    await exit(1);
   });
 
 async function requireAppStoreDirectory(cwd: string) {
-  if (!isAppStoreDirectory(cwd)) {
+  if (!(await isAppStoreDirectory(cwd))) {
     console.log(
       pc.red(pc.bold("You are not in an Umbrel App Store directory!"))
     );
@@ -97,10 +97,10 @@ async function requireAppStoreDirectory(cwd: string) {
     console.log(`  Please navigate to an Umbrel App Store directory`);
     console.log(
       `  or create a new one using ${pc.cyan(
-        pc.bold("umbrel appstore create [name]")
+        pc.bold("umbrel appstore create [id]")
       )}.`
     );
     console.log();
-    process.exit(1);
+    await exit(1);
   }
 }

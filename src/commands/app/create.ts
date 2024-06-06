@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { cancel, group, confirm, log, note, outro, text } from "@clack/prompts";
-import color from "picocolors";
+import pc from "picocolors";
 import Handlebars from "handlebars";
 import {
   getUmbrelAppStoreYml,
@@ -9,8 +9,10 @@ import {
   getAppIds,
 } from "../../modules/appstore";
 import { __dirname } from "../../utils/fs";
+import { MESSAGE_ABORTED } from "../../modules/console";
+import { exit } from "../../modules/process";
 
-export async function create(cwd: string, name?: string) {
+export async function create(cwd: string, id?: string) {
   // Create or load the App Store
   const appStoreType = await getAppStoreType(cwd);
   const appStoreId = (await getUmbrelAppStoreYml(cwd))?.id;
@@ -18,9 +20,9 @@ export async function create(cwd: string, name?: string) {
 
   const takenAppIds = await getAppIds(cwd);
 
-  let defaultName = name || "my-cool-app";
+  let defaultId = id || "my-cool-app";
   if (appStoreType === "community") {
-    defaultName = `${appStoreId}-${defaultName}`;
+    defaultId = `${appStoreId}-${defaultId}`;
   }
 
   const { appId, needsExportSh } = await group(
@@ -32,8 +34,8 @@ export async function create(cwd: string, name?: string) {
               ? `The id needs to be prefixed with '${appStoreId}-'.`
               : ""
           }`,
-          placeholder: defaultName,
-          initialValue: defaultName,
+          placeholder: defaultId,
+          initialValue: defaultId,
           validate: (value) => {
             if (!value) return "Please enter an id.";
             if (!/^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$/.test(value))
@@ -60,9 +62,9 @@ export async function create(cwd: string, name?: string) {
     {
       // On Cancel callback that wraps the group
       // So if the user cancels one of the prompts in the group this function will be called
-      onCancel: () => {
-        cancel("Operation cancelled.");
-        process.exit(0);
+      onCancel: async () => {
+        cancel(MESSAGE_ABORTED);
+        await exit();
       },
     }
   );
@@ -118,11 +120,11 @@ export async function create(cwd: string, name?: string) {
   }
 
   note(
-    ` - fill out the ${color.cyan(color.bold("umbrel-app.yml"))}
- - add your containers to the ${color.cyan(color.bold("docker-compose.yml"))}${
+    ` - fill out the ${pc.cyan(pc.bold("umbrel-app.yml"))}
+ - add your containers to the ${pc.cyan(pc.bold("docker-compose.yml"))}${
       needsExportSh
-        ? `\n - expose your environment variables for other apps in ${color.cyan(
-            color.bold("exports.sh")
+        ? `\n - expose your environment variables for other apps in ${pc.cyan(
+            pc.bold("exports.sh")
           )}`
         : ""
     }`,
@@ -130,8 +132,8 @@ export async function create(cwd: string, name?: string) {
   );
 
   outro(
-    `Problems? ${color.underline(
-      color.cyan("https://github.com/sharknoon/umbrel-cli/issues")
+    `Problems? ${pc.underline(
+      pc.cyan("https://github.com/sharknoon/umbrel-cli/issues")
     )}`
   );
 }

@@ -4,6 +4,7 @@ import path from "node:path";
 import {
   cancel,
   group,
+  intro,
   isCancel,
   note,
   outro,
@@ -11,33 +12,37 @@ import {
   spinner,
   text,
 } from "@clack/prompts";
-import color from "picocolors";
+import pc from "picocolors";
 import git from "isomorphic-git";
 import Handlebars from "handlebars";
 import { cloneUmbrelAppsRepository, isAppStoreDirectory } from "../../modules/appstore";
 import { __dirname } from "../../utils/fs";
+import { MESSAGE_ABORTED } from "../../modules/console";
+import { exit } from "../../modules/process";
 
-export async function create(cwd: string, name?: string) {
+export async function create(cwd: string, id?: string) {
+  console.clear();
+  intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App Store "))}`);
   if (await isAppStoreDirectory(cwd)) {
     note(
-      `  Get started by creating a new app using: ${color.cyan(
-        color.bold("umbrel app create")
+      `  Get started by creating a new app using: ${pc.cyan(
+        pc.bold("umbrel app create")
       )}
   If you want to init a new App Store anyway, please navigate to a different directory.`,
-      color.green("You are already in an Umbrel App Store directory 🚀")
+      pc.green("You are already in an Umbrel App Store directory 🚀")
     );
     outro(
-      `Problems? ${color.underline(
-        color.cyan("https://github.com/sharknoon/umbrel-cli/issues")
+      `Problems? ${pc.underline(
+        pc.cyan("https://github.com/sharknoon/umbrel-cli/issues")
       )}`
     );
-    process.exit(1);
+    await exit(1);
   }
 
   let pathToAppStore = await text({
     message: `Where would you like to create the App Store? The path should contain only alphabets ("a to z") and dashes ("-").`,
     placeholder: "./umbrel-apps",
-    initialValue: name ? `./${name}` : "./umbrel-apps",
+    initialValue: id ? `./${id}` : "./umbrel-apps",
     validate: (value) => {
       if (!value) return "Please enter a path.";
       if (value[0] !== ".") return "Please enter a relative path.";
@@ -49,8 +54,9 @@ export async function create(cwd: string, name?: string) {
     },
   });
   if (isCancel(pathToAppStore)) {
-    cancel("Operation cancelled.");
-    process.exit(0);
+    cancel(MESSAGE_ABORTED);
+    await exit();
+    return;
   }
   pathToAppStore = path.resolve(cwd, pathToAppStore);
 
@@ -70,8 +76,8 @@ export async function create(cwd: string, name?: string) {
     ],
   });
   if (isCancel(result)) {
-    cancel("Operation cancelled.");
-    process.exit(0);
+    cancel(MESSAGE_ABORTED);
+    await exit();
   }
   const appStoreType = result as "official" | "community";
 
@@ -82,8 +88,8 @@ export async function create(cwd: string, name?: string) {
   }
 
   note(
-    `Create your first app with\n${color.cyan(
-      color.bold(
+    `Create your first app with\n${pc.cyan(
+      pc.bold(
         `cd ${path.relative(path.resolve(), pathToAppStore)}\numbrel app create`
       )
     )}`,
@@ -91,8 +97,8 @@ export async function create(cwd: string, name?: string) {
   );
 
   outro(
-    `Problems? ${color.underline(
-      color.cyan("https://github.com/sharknoon/umbrel-cli/issues")
+    `Problems? ${pc.underline(
+      pc.cyan("https://github.com/sharknoon/umbrel-cli/issues")
     )}`
   );
 }
@@ -126,9 +132,9 @@ async function createCommunityAppStore(dir: string) {
         }),
     },
     {
-      onCancel: () => {
-        cancel("Operation cancelled.");
-        process.exit(0);
+      onCancel: async () => {
+        cancel(MESSAGE_ABORTED);
+        await exit();
       },
     }
   );
