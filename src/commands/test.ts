@@ -78,11 +78,12 @@ export async function test(cwd: string, id: string, host: string) {
 
   console.log("Umbrel OS environment: " + pc.cyan(environment));
 
-  const appStoreId = (await getUmbrelAppStoreYml(cwd)).id;
-  const appDir = `${appStoresDir}/${appStoreId}-umbrel-cli-00000000/${appId}`;
+  const appDir = `${appStoresDir}/getumbrel-umbrel-apps-github-53f74447/${appId}`;
 
   console.log(pc.cyan(`📦 Copying ${pc.bold(appId)} to ${pc.bold(appDir)}`));
-  await sftp.put(path.join(cwd, appId), appDir);
+  await sftp.uploadDir(path.join(cwd, appId), appDir, {
+    filter: (p) => !path.basename(p).startsWith("."),
+  });
 
   await sftp.end();
 }
