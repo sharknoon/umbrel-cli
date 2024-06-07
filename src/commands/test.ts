@@ -78,6 +78,7 @@ export async function test(cwd: string, id: string, host: string) {
 
   console.log("Umbrel OS environment: " + pc.cyan(environment));
 
+  // TODO handle case for community app stores
   const appDir = `${appStoresDir}/getumbrel-umbrel-apps-github-53f74447/${appId}`;
 
   console.log(pc.cyan(`📦 Copying ${pc.bold(appId)} to ${pc.bold(appDir)}`));
