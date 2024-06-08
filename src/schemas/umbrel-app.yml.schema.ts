@@ -38,7 +38,7 @@ export default async function umbrelAppYmlSchema(cwd: string) {
           {
             message:
               "The icon must be a valid URL or a relative path to a file in the app's directory.",
-          }
+          },
         )
         .optional(),
       category: z.enum([
@@ -77,7 +77,7 @@ export default async function umbrelAppYmlSchema(cwd: string) {
                 ? "valid URL"
                 : "path to a file"
             }.`,
-          }
+          },
         )
         .array(),
       releaseNotes: z.string().min(0).max(5000),

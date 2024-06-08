@@ -1,6 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { cancel, group, confirm, log, note, outro, text } from "@clack/prompts";
+import {
+  cancel,
+  group,
+  confirm,
+  log,
+  note,
+  outro,
+  text,
+  intro,
+} from "@clack/prompts";
 import pc from "picocolors";
 import Handlebars from "handlebars";
 import {
@@ -13,6 +22,9 @@ import { MESSAGE_ABORTED } from "../../modules/console";
 import { exit } from "../../modules/process";
 
 export async function create(cwd: string, id?: string) {
+  console.clear();
+  intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App "))}`);
+
   // Create or load the App Store
   const appStoreType = await getAppStoreType(cwd);
   const appStoreId = (await getUmbrelAppStoreYml(cwd))?.id;
@@ -66,7 +78,7 @@ export async function create(cwd: string, id?: string) {
         cancel(MESSAGE_ABORTED);
         await exit();
       },
-    }
+    },
   );
 
   // Create the app directory
@@ -76,9 +88,9 @@ export async function create(cwd: string, id?: string) {
   // Create umbrel-app.yml
   const manifestTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(__dirname, "templates", "app", "umbrel-app.yml.handlebars"),
-      "utf-8"
-    )
+      path.resolve(__dirname, "templates", "umbrel-app.yml.handlebars"),
+      "utf-8",
+    ),
   );
   const manifest = manifestTemplate({
     appId,
@@ -91,29 +103,24 @@ export async function create(cwd: string, id?: string) {
   // Create docker-compose.yml
   const dockerComposeTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(
-        __dirname,
-        "templates",
-        "app",
-        "docker-compose.yml.handlebars"
-      ),
-      "utf-8"
-    )
+      path.resolve(__dirname, "templates", "docker-compose.yml.handlebars"),
+      "utf-8",
+    ),
   );
   const dockerCompose = dockerComposeTemplate({});
   await fs.writeFile(
     path.join(appDir, "docker-compose.yml"),
     dockerCompose,
-    "utf-8"
+    "utf-8",
   );
 
   // Create exports.sh
   if (needsExportSh) {
     const exportsTemplate = Handlebars.compile(
       await fs.readFile(
-        path.resolve(__dirname, "templates", "app", "exports.sh.handlebars"),
-        "utf-8"
-      )
+        path.resolve(__dirname, "templates", "exports.sh.handlebars"),
+        "utf-8",
+      ),
     );
     const exports = exportsTemplate({});
     await fs.writeFile(path.join(appDir, "exports.sh"), exports, "utf-8");
@@ -122,18 +129,18 @@ export async function create(cwd: string, id?: string) {
   note(
     ` - fill out the ${pc.cyan(pc.bold("umbrel-app.yml"))}
  - add your containers to the ${pc.cyan(pc.bold("docker-compose.yml"))}${
-      needsExportSh
-        ? `\n - expose your environment variables for other apps in ${pc.cyan(
-            pc.bold("exports.sh")
-          )}`
-        : ""
-    }`,
-    "Next steps"
+   needsExportSh
+     ? `\n - expose your environment variables for other apps in ${pc.cyan(
+         pc.bold("exports.sh"),
+       )}`
+     : ""
+ }`,
+    "Next steps",
   );
 
   outro(
     `Problems? ${pc.underline(
-      pc.cyan("https://github.com/sharknoon/umbrel-cli/issues")
-    )}`
+      pc.cyan("https://github.com/sharknoon/umbrel-cli/issues"),
+    )}`,
   );
 }

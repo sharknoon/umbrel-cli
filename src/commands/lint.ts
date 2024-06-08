@@ -21,11 +21,12 @@ export async function lint(cwd: string): Promise<number> {
     noLintingErrors = (await lintUmbrelAppYml(cwd, id)) && noLintingErrors;
     noLintingErrors = (await lintDockerComposeYml(cwd, id)) && noLintingErrors;
   }
-  noLintingErrors = (await lintUmbrelAppYmlDuplications(cwd)) && noLintingErrors;
+  noLintingErrors =
+    (await lintUmbrelAppYmlDuplications(cwd)) && noLintingErrors;
   console.log(
     noLintingErrors
       ? pc.green("No linting errors found 🎉")
-      : pc.red("Linting failed.")
+      : pc.red("Linting failed."),
   );
   return noLintingErrors ? 0 : 1;
 }
@@ -41,7 +42,7 @@ async function lintUmbrelAppStoreYml(cwd: string): Promise<boolean> {
   if (!(await exists(umbrelAppStoreYmlPath))) {
     printLintingError(
       "umbrel-app-store.yml does not exist",
-      "For community app stores, the file umbrel-app-store.yml is required"
+      "For community app stores, the file umbrel-app-store.yml is required",
     );
     return false;
   }
@@ -50,12 +51,12 @@ async function lintUmbrelAppStoreYml(cwd: string): Promise<boolean> {
   let umbrelAppStoreYml;
   try {
     umbrelAppStoreYml = YAML.parse(
-      await fs.readFile(umbrelAppStoreYmlPath, "utf-8")
+      await fs.readFile(umbrelAppStoreYmlPath, "utf-8"),
     );
   } catch (e) {
     printLintingError(
       "umbrel-app-store.yml is not a valid YAML file",
-      String(e)
+      String(e),
     );
     return false;
   }
@@ -79,7 +80,7 @@ async function lintReadmeMd(cwd: string): Promise<boolean> {
     printLintingError(
       "README.md does not exist",
       "A README.md file is highly recommended to tell users, how to install your App Store and what apps are available",
-      "warning"
+      "warning",
     );
     return false;
   }
@@ -93,7 +94,7 @@ async function lintUmbrelAppYml(cwd: string, id: string): Promise<boolean> {
   if (!(await exists(umbrelAppYmlPath))) {
     printLintingError(
       "umbrel-app.yml does not exist",
-      `Every app needs a manifest file called "umbrel-app.yml" at the root of the app directory`
+      `Every app needs a manifest file called "umbrel-app.yml" at the root of the app directory`,
     );
     return false;
   }
@@ -124,7 +125,7 @@ async function lintUmbrelAppYml(cwd: string, id: string): Promise<boolean> {
   ) {
     printLintingError(
       "Taglines should not end with a period",
-      result.data.tagline.split(".")[0] + pc.bold(pc.cyan("."))
+      result.data.tagline.split(".")[0] + pc.bold(pc.cyan(".")),
     );
     return false;
   }
@@ -151,7 +152,7 @@ async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
       const existintAppName = ports.get(appYml.port);
       printLintingError(
         `Port ${appYml.port} is already used by ${existintAppName}`,
-        `Each app must use a unique port`
+        `Each app must use a unique port`,
       );
     }
     ports.set(appYml.port, appYml.name);
@@ -169,7 +170,7 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
   if (!(await exists(dockerComposeYmlPath))) {
     printLintingError(
       "docker-compose.yml does not exist",
-      `Every app needs a docker compose file called "docker-compose.yml" at the root of the app directory`
+      `Every app needs a docker compose file called "docker-compose.yml" at the root of the app directory`,
     );
     return false;
   }
@@ -255,7 +256,7 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
     if (!imageMatch) {
       printLintingError(
         `Invalid image name ${pc.cyan(image)}`,
-        `Images should be named like ${pc.cyan("<name>:<version>@<sha256>")}`
+        `Images should be named like ${pc.cyan("<name>:<version>@<sha256>")}`,
       );
       result = false;
     } else {
@@ -264,7 +265,7 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
         printLintingError(
           `Invalid image tag ${pc.cyan(version)}`,
           `Images should not use the "latest" tag`,
-          "warning"
+          "warning",
         );
       }
     }
@@ -276,7 +277,7 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
 function printLintingError(
   title: string,
   message: string,
-  severity: "error" | "warning" = "error"
+  severity: "error" | "warning" = "error",
 ) {
   const level =
     severity === "error"

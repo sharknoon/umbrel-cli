@@ -4,18 +4,15 @@ import YAML from "yaml";
 import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 import { isAppStoreDirectory } from "./appstore";
 
-export async function getUmbrelAppYmls(
-  cwd: string
-) {
+export async function getUmbrelAppYmls(cwd: string) {
   const rawUmbrelAppYmls = await getRawUmbrelAppYmls(cwd);
   const umbrelAppYmls = [];
   for (const rawUmbrelAppYml of rawUmbrelAppYmls) {
-      const schema = await umbrelAppYmlSchema(cwd);
-      const result = await schema.safeParseAsync(rawUmbrelAppYml);
-      if (result.success) {
-        umbrelAppYmls.push(result.data);
-      }
-    
+    const schema = await umbrelAppYmlSchema(cwd);
+    const result = await schema.safeParseAsync(rawUmbrelAppYml);
+    if (result.success) {
+      umbrelAppYmls.push(result.data);
+    }
   }
   return umbrelAppYmls;
 }
