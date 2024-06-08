@@ -15,7 +15,7 @@
     "dev": "npm run build && node dist/cli.js",
     "build": "rollup --config rollup.config.ts --configPlugin typescript",
     "test": "vitest run",
-    "lint": "eslint .",
+    "lint": "prettier . --check && eslint .",
     "format": "prettier . --write",
     "schema": "json2ts \"src/schemas/*.json\" src/schemas",
     "prepublishOnly": "npm run build",

@@ -1,7 +1,7 @@
-import path, { parse } from "node:path";
+import path from "node:path";
 import fs from "node:fs/promises";
 import YAML from "yaml";
-import { cancel, group, intro, isCancel, text } from "@clack/prompts";
+import { cancel, intro, isCancel, text } from "@clack/prompts";
 import pc from "picocolors";
 import { getAppIds } from "../modules/appstore";
 import { MESSAGE_ABORTED } from "../modules/console";
