@@ -8,7 +8,7 @@ import { MESSAGE_ABORTED } from "../modules/console";
 import { exit } from "../modules/process";
 import { exists } from "../utils/fs";
 import { ComposeSpecification } from "../schemas/docker-compose.yml.schema";
-import { parseImage } from "../modules/image";
+import { resolveImage } from "../modules/image";
 
 export async function update(cwd: string, id?: string) {
   console.clear();
@@ -64,7 +64,7 @@ export async function update(cwd: string, id?: string) {
       continue;
     }
     try {
-      images.push(await parseImage(image));
+      images.push(await resolveImage(image));
     } catch (e) {
       cancel(`The service '${service}' has an invalid image '${image}': ${e}`);
       return;
