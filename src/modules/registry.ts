@@ -6,8 +6,9 @@ registryCache.set("quay.io", true);
 
 export async function isRegistry(host: string): Promise<boolean> {
   // skip the check if the cache hits
-  if (registryCache.has(host)) {
-    return registryCache.get(host)!;
+  const hit = registryCache.get(host);
+  if (hit !== undefined) {
+    return hit;
   }
   // call /v2/ and check if it returns a 200 status code
   try {
@@ -26,13 +27,17 @@ export async function isRegistry(host: string): Promise<boolean> {
   }
 }
 
-export async function getDigest(host: string, path: string, tag: string): Promise<string> {
+export async function getDigest(
+  host: string,
+  path: string,
+  tag: string,
+): Promise<string> {
   const result = await fetch(`https://${host}/v2/${path}/manifests/${tag}`, {
     method: "HEAD",
     headers: {
       Accept: "application/vnd.oci.image.index.v1+json",
     },
-  })
+  });
   const digest = result.headers.get("Docker-Content-Digest");
   if (!digest) {
     throw new Error(`Failed to get digest for ${host}/${path}:${tag}`);

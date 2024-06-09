@@ -15,12 +15,25 @@ describe("resolveImage", () => {
     expect(await resolveImage(image)).toEqual(expected);
   });
 
+  it("should resolve a complex image with path, tag and digest", async () => {
+    const image =
+      "docker:24.0.5-dind@sha256:3c6e4dca7a63c9a32a4e00da40461ce067f255987ccc9721cf18ffa087bcd1ef";
+    const expected = {
+      host: "registry.hub.docker.com",
+      path: "docker",
+      tag: "24.0.5-dind",
+      digest:
+        "sha256:3c6e4dca7a63c9a32a4e00da40461ce067f255987ccc9721cf18ffa087bcd1ef",
+    };
+    expect(await resolveImage(image)).toEqual(expected);
+  });
+
   it("should resolve image with host and path", async () => {
     const image = "docker.io/httpd";
     const expected = {
       host: "registry.hub.docker.com",
       path: "httpd",
-      tag: undefined,
+      tag: "latest",
       digest: undefined,
     };
     expect(await resolveImage(image)).toEqual(expected);
@@ -31,7 +44,7 @@ describe("resolveImage", () => {
     const expected = {
       host: "registry.hub.docker.com",
       path: "httpd",
-      tag: undefined,
+      tag: "latest",
       digest: undefined,
     };
     expect(await resolveImage(image)).toEqual(expected);
