@@ -59,7 +59,7 @@ export default async function umbrelAppYmlSchema(cwd: string) {
       website: z.string().url(),
       submitter: z.coerce.string().min(1).max(50),
       submission: z.string().url(),
-      repo: z.string().url().optional().or(z.literal("")),
+      repo: z.string().url().or(z.literal("")),
       support: z.string().url(),
       gallery: z
         .string()
