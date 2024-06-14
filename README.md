@@ -1,4 +1,4 @@
-# Umbrel CLI
+# umbrelCLI
 
 This is a small CLI tool to help you create and manage your own [Umbrel](https://umbrel.com) apps.
 
