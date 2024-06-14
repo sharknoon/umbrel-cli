@@ -1,4 +1,7 @@
+
 # umbrelCLI
+
+[![Node.js CI](https://github.com/sharknoon/umbrel-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/sharknoon/umbrel-cli/actions/workflows/ci.yml)
 
 This is a small CLI tool to help you create and manage your own [Umbrel](https://umbrel.com) apps.
 
