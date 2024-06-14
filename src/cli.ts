@@ -42,8 +42,6 @@ await yargs(hideBin(process.argv))
       });
     },
     async (argv) => {
-      console.clear();
-      intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App Store "))}`);
       await createAppStore(argv.w, argv.id as string | undefined);
     }
   )
