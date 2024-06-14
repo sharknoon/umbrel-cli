@@ -6,7 +6,7 @@ import path from "node:path";
 import pc from "picocolors";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
-import { getAppIds, getAppStoreType } from "../modules/appstore";
+import { getAllAppIds, getAppStoreType } from "../modules/appstore";
 import { getRawUmbrelAppYmls } from "../modules/apps";
 import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 import dockerComposeYmlSchema from "../schemas/docker-compose.yml.schema.json";
@@ -17,11 +17,12 @@ export async function lint(cwd: string): Promise<number> {
   let noLintingErrors = true;
   noLintingErrors = (await lintUmbrelAppStoreYml(cwd)) && noLintingErrors;
   noLintingErrors = (await lintReadmeMd(cwd)) && noLintingErrors;
-  for (const id of await getAppIds(cwd)) {
+  for (const id of await getAllAppIds(cwd)) {
     noLintingErrors = (await lintUmbrelAppYml(cwd, id)) && noLintingErrors;
     noLintingErrors = (await lintDockerComposeYml(cwd, id)) && noLintingErrors;
   }
-  noLintingErrors = (await lintUmbrelAppYmlDuplications(cwd)) && noLintingErrors;
+  noLintingErrors =
+    (await lintUmbrelAppYmlDuplications(cwd)) && noLintingErrors;
   console.log(
     noLintingErrors
       ? pc.green("No linting errors found 🎉")

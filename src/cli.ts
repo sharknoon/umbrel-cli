@@ -9,7 +9,11 @@ import pc from "picocolors";
 import { intro } from "@clack/prompts";
 import { lint } from "./commands/lint";
 import { port } from "./commands/generate/port";
-import { cloneUmbrelAppsRepository, isAppStoreDirectory } from "./modules/appstore";
+import { test } from "./commands/test";
+import {
+  cloneUmbrelAppsRepository,
+  isAppStoreDirectory,
+} from "./modules/appstore";
 import { officialAppStoreDir } from "./modules/paths";
 import { exit } from "./modules/process";
 import { printErrorOccured } from "./modules/console";
@@ -78,13 +82,35 @@ await yargs(hideBin(process.argv))
       await port(argv.w);
     }
   )
+  .command(
+    "test [id]",
+    "Installs an app on Umbrel and executes it",
+    (yargs) => {
+      yargs.option("host", {
+        type: "string",
+        alias: "H",
+        default: "umbrel.local",
+        describe: "The hostname of your Umbrel",
+      }),
+        yargs.positional("id", {
+          type: "string",
+          describe: "The id of the app to be tested",
+          default: "",
+        });
+    },
+    async (argv) => {
+      await requireAppStoreDirectory(argv.w);
+      // @ts-expect-error somehow id is not detected properly
+      await test(argv.w, argv.id, argv.host);
+    }
+  )
   .alias("v", "version")
   .alias("h", "help")
   .demandCommand(1)
   .strict()
   .parseAsync()
   .catch(async (error) => {
-    printErrorOccured(error)
+    printErrorOccured(error);
     await exit(1);
   });
 

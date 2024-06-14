@@ -61,13 +61,30 @@ also against those ports.
 
 ![umbrel port generate](assets/port-generate.svg?raw=true)
 
+### `umbrel test <name>`
+
+> [!NOTE]  
+> This command can only be executed inside an App Store directory!
+
+#### Options
+
+| Option | Description | Default |
+|--------|---------------|------------|
+|`-H`, `--host`| Changes the host of your umbrel to connect to | `umbrel.local` |
+
+This command connects to your umbrel and installs the app there. If the app is already installed,
+or a older version of the app is already present in the app store, it asks you if you would like
+to overwrite it.
+
+TODO screenshot
+
 ## Roadmap
 
 - [x] 🛍️ Creating a Community App Store / cloning the official Umbrel App Store
 - [x] 🗺️ Creating an app
 - [ ] ⬇️ Creating an update an app
 - [x] 🕵️ Linting apps and appstores using `umbrel lint`
-- [ ] 🧪 Testing an app using `umbrel test <appid>`
+- [x] 🧪 Testing an app using `umbrel test <appid>`
 
 ## Development
 
