@@ -9,7 +9,7 @@ This is a small CLI tool to help you create and manage your own [Umbrel](https:/
 
 ```bash
 npm install -g umbrel-cli@latest
-umbrel appstore create
+umbrel --help
 ```
 
 ## Features
@@ -17,6 +17,7 @@ umbrel appstore create
 - 🛍️ Support for the official Umbrel App Store as well as Community App Stores
 - 🗺️ Guides you through the creation of an app or an Community App Store
 - 🕵️ Finds errors in your app manifests and compose files early
+- ⬆️ Uploads your app to your Umbrel to quickly test it
 
 ## Documentation
 
@@ -89,6 +90,13 @@ TODO screenshot
 - [x] 🕵️ Linting apps and appstores
 - [x] 🧪 Testing an app
 
+## Run Umbrel OS
+
+To test your Umbrel apps, you need to have a running Umbrel. You can either buy an [Umbrel Home](https://umbrel.com/umbrel-home),
+[install it on a Raspberry Pi 4](https://github.com/getumbrel/umbrel/wiki/Raspberry-Pi-5-%E2%80%90-Boot-from-NVMe-or-USB) or newer
+(min. 4GB RAM) or on any [x86 computer](https://github.com/getumbrel/umbrel/wiki/Install-umbrelOS-on-x86-systems) or 
+[install it in a virtual machine](https://github.com/getumbrel/umbrel/wiki/Install-umbrelOS-on-a-Linux-VM).
+
 ## Development
 
 To build and run the Umbrel CLI, simply clone this repository and run the following commands:
@@ -98,17 +106,19 @@ npm install
 npm run dev -- -- --help
 ```
 
-## Run Umbrel OS
+## Set up umbrelOS development instance
 
-To test your Umbrel apps, you need to run Umbrel OS on your machine.
+Using Multipass, you can easily and quickly set up umbrelOS for testing your apps and playing around. Keep in mind, that this
+version of umbrelOS is not intended to be used in a production environment, as it may contain additional bugs!
 
 Prerequisites:
 
 - [Multipass](https://multipass.run/install)
 
-This method diviates from the official installation method in that it clones the repository inside the vm
-instead of on the machine. This is necessary to ensure that in Windows the correct +x flags are set and the
-line breaks (\n instead of \r\n) are correct.
+This method diviates from the 
+[official installation method](https://github.com/getumbrel/umbrel-apps?tab=readme-ov-file#3-testing-the-app-on-umbrel) 
+in that it clones the repository inside the vm instead of on the machine. This is necessary to ensure that in Windows the
+correct +x flags are set and the line breaks (\n instead of \r\n) are correct.
 
 ```bash
 # Feel free to bump the specs
