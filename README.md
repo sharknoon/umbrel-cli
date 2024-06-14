@@ -83,8 +83,8 @@ TODO screenshot
 - [x] 🛍️ Creating a Community App Store / cloning the official Umbrel App Store
 - [x] 🗺️ Creating an app
 - [ ] ⬇️ Creating an update an app
-- [x] 🕵️ Linting apps and appstores using `umbrel lint`
-- [x] 🧪 Testing an app using `umbrel test <appid>`
+- [x] 🕵️ Linting apps and appstores
+- [x] 🧪 Testing an app
 
 ## Development
 
