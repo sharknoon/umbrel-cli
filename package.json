@@ -60,10 +60,11 @@
     "ajv-formats": "^3.0.1",
     "handlebars": "^4.7.8",
     "isomorphic-git": "^1.25.8",
-    "read": "^3.0.1",
-    "ssh2-sftp-client": "^10.0.3",
     "latest-version": "^9.0.0",
+    "read": "^3.0.1",
     "semver": "^7.6.2",
+    "ssh2": "^1.15.0",
+    "ssh2-sftp-client": "^10.0.3",
     "yaml": "^2.4.2",
     "yargs": "^17.7.2",
     "zod": "^3.23.6"

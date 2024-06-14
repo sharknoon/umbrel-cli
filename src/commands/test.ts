@@ -1,10 +1,12 @@
 import path from "node:path";
 import { read } from "read";
 import Client from "ssh2-sftp-client";
+import { Client as SSHClient } from "ssh2";
 import pc from "picocolors";
-import { getAppIds, getUmbrelAppStoreYml } from "../modules/appstore";
-import { printAborted } from "../modules/console";
+import { getAppIds } from "../modules/appstore";
+import { MESSAGE_ABORTED, printAborted } from "../modules/console";
 import { exit } from "../modules/process";
+import { connect } from "../modules/ssh";
 
 export async function test(cwd: string, id: string, host: string) {
   let appIds: string[] = await getAppIds(cwd);
@@ -78,8 +80,19 @@ export async function test(cwd: string, id: string, host: string) {
 
   console.log("Umbrel OS environment: " + pc.cyan(environment));
 
-  // TODO handle case for community app stores
   const appDir = `${appStoresDir}/getumbrel-umbrel-apps-github-53f74447/${appId}`;
+
+  if (await sftp.exists(appDir)) {
+    const override = await read({
+      prompt: `The app ${pc.bold(pc.cyan(appId))} already exists on your Umbrel. Do you want to override it? (Y/n)`,
+    });
+    if (override === "" || override.toLowerCase() === "y") {
+      await sftp.rmdir(appDir, true);
+    } else {
+      console.log(MESSAGE_ABORTED);
+      return;
+    }
+  }
 
   console.log(pc.cyan(`📦 Copying ${pc.bold(appId)} to ${pc.bold(appDir)}`));
   await sftp.uploadDir(path.join(cwd, appId), appDir, {
@@ -87,4 +100,36 @@ export async function test(cwd: string, id: string, host: string) {
   });
 
   await sftp.end();
+
+  // execute umbreld client apps.install.mutate --appId ${appId}
+  const ssh = new SSHClient();
+  await connect(ssh, {
+    host,
+    port: 22,
+    username: "umbrel",
+    password,
+  });
+
+  const command = `umbreld client apps.install.mutate --appId ${appId}`;
+  console.log(pc.green(`🏃‍➡️ Executing ${pc.cyan(command)}`));
+  ssh.exec(command, (err, stream) => {
+    if (err) throw err;
+    stream
+      .on("close", (code: number, signal: string) => {
+        const color = code === 0 ? pc.green : pc.red;
+        console.log(
+          color(
+            "❌ Connection closed with exit code " +
+            pc.bold(code) +
+            (signal ? " and signal " + pc.bold(signal) : "")
+          )
+        );
+        conn.end();
+      })
+      .on("data", (data) => {
+        console.log("STDOUT: " + data);
+      })
+      .stderr.on("data", (data) => {
+        console.log("STDERR: " + data);
+      });
 }
