@@ -1,4 +1,4 @@
-import { isRegistry } from "./registry";
+import { analyzeRegistry } from "./registry";
 
 interface Image {
   host: string;
@@ -31,7 +31,7 @@ export async function resolveImage(image: string): Promise<Image> {
     firstSegment = "registry.hub.docker.com";
   }
 
-  if (await isRegistry(firstSegment)) {
+  if (await analyzeRegistry(firstSegment)) {
     host = firstSegment;
     path = pathSegments.slice(1).join("/");
   }
