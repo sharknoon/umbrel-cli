@@ -23,8 +23,8 @@ export async function getAppStoreType(
     return "community";
   }
 
-  const officialAppStoreAppIds = await getAppIds(officialAppStoreDir);
-  const appIds = await getAppIds(cwd);
+  const officialAppStoreAppIds = await getAllAppIds(officialAppStoreDir);
+  const appIds = await getAllAppIds(cwd);
   // check if dir contains at least all the apps from the official app store
   if (officialAppStoreAppIds.every((oid) => appIds.some((id) => id === oid))) {
     appStoreTypeCache.set(cwd, "official");
@@ -35,7 +35,7 @@ export async function getAppStoreType(
   return undefined;
 }
 
-export async function getAppIds(cwd: string): Promise<string[]> {
+export async function getAllAppIds(cwd: string): Promise<string[]> {
   const appIds = await fs.readdir(cwd, { withFileTypes: true });
   return appIds
     .filter((e) => e.isDirectory() && !e.name.startsWith("."))

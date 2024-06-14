@@ -61,6 +61,7 @@
     "handlebars": "^4.7.8",
     "isomorphic-git": "^1.25.8",
     "latest-version": "^9.0.0",
+    "open": "^10.1.0",
     "read": "^3.0.1",
     "semver": "^7.6.2",
     "ssh2": "^1.15.0",

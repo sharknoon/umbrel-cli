@@ -101,9 +101,8 @@ await yargs(hideBin(process.argv))
         });
     },
     async (argv) => {
-      // @ts-ignore
       await requireAppStoreDirectory(argv.w);
-      // @ts-ignore
+      // @ts-expect-error somehow id is not detected properly
       await test(argv.w, argv.id, argv.host);
     }
   )
@@ -113,7 +112,7 @@ await yargs(hideBin(process.argv))
   .strict()
   .parseAsync()
   .catch(async (error) => {
-    printErrorOccured(error)
+    printErrorOccured(error);
     await exit(1);
   });
 

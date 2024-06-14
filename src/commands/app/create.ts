@@ -6,7 +6,7 @@ import Handlebars from "handlebars";
 import {
   getUmbrelAppStoreYml,
   getAppStoreType,
-  getAppIds,
+  getAllAppIds,
 } from "../../modules/appstore";
 import { __dirname } from "../../utils/fs";
 import { MESSAGE_ABORTED } from "../../modules/console";
@@ -18,7 +18,7 @@ export async function create(cwd: string, id?: string) {
   const appStoreId = (await getUmbrelAppStoreYml(cwd))?.id;
   log.info(`Using the App Store at ${cwd} to create a new app.`);
 
-  const takenAppIds = await getAppIds(cwd);
+  const takenAppIds = await getAllAppIds(cwd);
 
   let defaultId = id || "my-cool-app";
   if (appStoreType === "community") {
@@ -122,12 +122,12 @@ export async function create(cwd: string, id?: string) {
   note(
     ` - fill out the ${pc.cyan(pc.bold("umbrel-app.yml"))}
  - add your containers to the ${pc.cyan(pc.bold("docker-compose.yml"))}${
-      needsExportSh
-        ? `\n - expose your environment variables for other apps in ${pc.cyan(
-            pc.bold("exports.sh")
-          )}`
-        : ""
-    }`,
+   needsExportSh
+     ? `\n - expose your environment variables for other apps in ${pc.cyan(
+         pc.bold("exports.sh")
+       )}`
+     : ""
+ }`,
     "Next steps"
   );
 
