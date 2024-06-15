@@ -10,16 +10,25 @@ import { exit } from "../modules/process";
 import { connect, exec } from "../modules/ssh";
 import { getAppYml } from "../modules/app";
 
-export async function test(cwd: string, id: string, host: string) {
+export async function test(
+  cwd: string,
+  appId?: string,
+  host?: string,
+  port?: number,
+  username?: string,
+  password?: string
+) {
   const appIds: string[] = await getAllAppIds(cwd);
-  let appId: string = id;
-  let password: string;
+  port = port || 22;
+  username = username || "umbrel";
 
   try {
     if (!appId) {
-      appId = await read({
-        prompt: "Please enter the id of the app to be tested: ",
-      });
+      appId = String(
+        await read({
+          prompt: "Please enter the id of the app to be tested: ",
+        })
+      );
     }
 
     if (!appIds.includes(appId)) {
@@ -33,11 +42,15 @@ export async function test(cwd: string, id: string, host: string) {
       return;
     }
 
-    password = await read({
-      prompt: "Please enter the password for your Umbrel: ",
-      silent: true,
-      replace: "*",
-    });
+    if (!password) {
+      password = String(
+        await read({
+          prompt: "Please enter the password for your Umbrel: ",
+          silent: true,
+          replace: "*",
+        })
+      );
+    }
   } catch {
     printAborted();
     await exit();
@@ -49,8 +62,8 @@ export async function test(cwd: string, id: string, host: string) {
     try {
       await sftp.connect({
         host,
-        port: 22,
-        username: "umbrel",
+        port,
+        username,
         password,
       });
       console.log(pc.green("🎉 Successfully connected to Umbrel"));
@@ -118,8 +131,8 @@ export async function test(cwd: string, id: string, host: string) {
   try {
     await connect(ssh, {
       host,
-      port: 22,
-      username: "umbrel",
+      port,
+      username,
       password,
     });
 
@@ -179,8 +192,8 @@ export async function test(cwd: string, id: string, host: string) {
 
   // Open the app
   const umbrelAppYml = await getAppYml(cwd, appId);
-  const port = umbrelAppYml?.port;
-  if (!port) {
+  const appPort = umbrelAppYml?.port;
+  if (!appPort) {
     console.error(
       pc.red(
         `🚨 The app ${pc.bold(appId)} does not have a port defined in its ${pc.bold(
@@ -192,7 +205,7 @@ export async function test(cwd: string, id: string, host: string) {
   }
   const pathname = umbrelAppYml?.path || "";
   const url = new URL(`http://${host}`);
-  url.port = port;
+  url.port = appPort;
   url.pathname = pathname;
   console.log(pc.green(`🚀 Opening ${pc.bold(String(url))}`));
   await open(url.toString());

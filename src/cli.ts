@@ -86,22 +86,39 @@ await yargs(hideBin(process.argv))
     "test [id]",
     "Installs an app on Umbrel and executes it",
     (yargs) => {
+      yargs.positional("id", {
+        type: "string",
+        describe: "The id of the app to be tested",
+        default: "",
+      });
       yargs.option("host", {
         type: "string",
         alias: "H",
         default: "umbrel.local",
-        describe: "The hostname of your Umbrel",
-      }),
-        yargs.positional("id", {
-          type: "string",
-          describe: "The id of the app to be tested",
-          default: "",
-        });
+        describe: "The hostname to connect via SSH to your Umbrel",
+      });
+      yargs.option("port", {
+        type: "number",
+        alias: "P",
+        default: 22,
+        describe: "The port to connect via SSH to your Umbrel",
+      });
+      yargs.option("username", {
+        type: "string",
+        alias: "u",
+        default: "umbrel",
+        describe: "The username to connect via SSH to your Umbrel",
+      });
+      yargs.option("password", {
+        type: "string",
+        alias: "p",
+        describe: "The password to connect via SSH to your Umbrel",
+      });
     },
     async (argv) => {
       await requireAppStoreDirectory(argv.w);
       // @ts-expect-error somehow id is not detected properly
-      await test(argv.w, argv.id, argv.host);
+      await test(argv.w, argv.id, argv.host, argv.port, argv.username, argv.password);
     }
   )
   .alias("v", "version")
