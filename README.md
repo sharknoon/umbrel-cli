@@ -75,6 +75,9 @@ also against those ports.
 | Option | Description | Default |
 |--------|---------------|------------|
 |`-H`, `--host`| Changes the host of your umbrel to connect to | `umbrel.local` |
+|`-P`, `--port`| Changes the port of your umbrel to connect to | `22` |
+|`-u`, `--username` | Changes the username of your umbrel to connect to | `umbrel` |
+|`-p`, `--password` | Sets the password of your umbrel to connect to | - |
 
 This command connects to your umbrel and installs the app there. If the app is already installed,
 or a older version of the app is already present in the app store, it asks you if you would like
