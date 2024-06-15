@@ -72,7 +72,7 @@ export async function test(
       console.error(
         pc.red(
           pc.bold(
-            `🚨 Please check the ssh connection manually by typing ${pc.cyan(`ssh umbrel@${host}`)}.`
+            `🚨 Please check the ssh connection manually by typing ${pc.cyan(`ssh ${port !== 22 ? `-p ${port} ` : ""}${username}@${host}`)}.`
           )
         )
       );
