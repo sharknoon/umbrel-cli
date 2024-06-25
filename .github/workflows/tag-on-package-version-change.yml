@@ -9,6 +9,7 @@ jobs:
   tag:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - id: check
         uses: EndBug/version-check@v2
       - if: steps.check.outputs.changed == 'true'
