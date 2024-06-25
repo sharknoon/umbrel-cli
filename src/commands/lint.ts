@@ -245,8 +245,9 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
   }
   */
 
-  // Check if the image follows the naming convention
   const services = Object.keys(dockerComposeYmlMocked.services ?? {});
+
+  // Check if the image follows the naming convention
   for (const service of services) {
     const image = dockerComposeYmlMocked.services?.[service].image;
     if (!image) {
@@ -266,6 +267,34 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
           `Invalid image tag ${pc.cyan(version)}`,
           `Images should not use the "latest" tag`,
           "warning"
+        );
+      }
+    }
+  }
+
+  // Check if the keys "environment", "labels", and "extra_hosts" contains bare booleans (true instead of "true")
+  // Note this is only an issue in Docker Compose V1. As soon as umbrelOS 0.5 is no longer supported, this check
+  // is unnecessary as umbrelOS >= 1 uses Docker Compose V2 which allows bare boolean values
+  for (const service of services) {
+    const environment = dockerComposeYmlMocked.services?.[service].environment;
+    const labels = dockerComposeYmlMocked.services?.[service].labels;
+    const extra_hosts = dockerComposeYmlMocked.services?.[service].extra_hosts;
+    const entries = [];
+    // Nothing to do if it is an string array
+    if (environment && typeof environment === "object") {
+      entries.push(...Object.entries(environment));
+    }
+    if (labels && typeof labels === "object") {
+      entries.push(...Object.entries(labels));
+    }
+    if (extra_hosts && typeof extra_hosts === "object") {
+      entries.push(...Object.entries(extra_hosts));
+    }
+    for (const [key, value] of entries) {
+      if (typeof value === "boolean") {
+        printLintingError(
+          "Invalid YAML boolean value for key " + pc.cyan(key),
+          `Boolean values thould be strings like ${pc.cyan(`"${value}"`)} instead of ${pc.cyan(String(value))}`
         );
       }
     }
