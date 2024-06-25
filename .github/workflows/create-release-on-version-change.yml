@@ -34,4 +34,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          name: umbrelCLI v{{ steps.check.outputs.version }}
+          name: umbrelCLI v${{ steps.check.outputs.version }}
+          tag_name: v${{ steps.check.outputs.version }}
+          body: TODO
