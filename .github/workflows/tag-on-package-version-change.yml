@@ -17,7 +17,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           custom_tag: ${{ steps.check.outputs.version }}
-      - uses: ncipollo/release-action@v1
+      - if: steps.check.outputs.changed == 'true'
+        uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.tag_version.outputs.new_tag }}
           name: Umbrel CLI v${{ steps.tag_version.outputs.new_tag }}
