@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
+  cloneUmbrelAppsRepository,
   getAllAppIds,
   getAppStoreType,
   getUmbrelAppStoreYml,
   isAppStoreDirectory,
 } from "./appstore";
+import { exists } from "../utils/fs";
 
 describe("getAppStoreType", () => {
   it("should return 'community' if 'umbrel-app-store.yml' exists", async () => {
@@ -26,7 +28,7 @@ describe("getAppStoreType", () => {
   });
 });
 
-describe("getAppIds", () => {
+describe("getAllAppIds", () => {
   it("should return an array of app IDs in the specified directory", async () => {
     const dir = "tests/umbrel-apps";
     const result = await getAllAppIds(dir);
@@ -82,5 +84,24 @@ describe("getUmbrelAppStoreYml", () => {
     const file = "non-existent-file.yml";
     const result = await getUmbrelAppStoreYml(file);
     expect(result).toBeUndefined();
+  });
+});
+
+describe("cloneUmbrelAppsRepository", () => {
+  it("should clone the Umbrel Apps repository into the specified directory", async () => {
+    const dir = "tests/umbrel-apps";
+    await cloneUmbrelAppsRepository(dir);
+    const dirExists = await exists(dir);
+    expect(dirExists).toBe(true);
+  });
+
+  it("should not throw an error if the specified directory already exists", async () => {
+    const dir = "tests/umbrel-apps";
+    try {
+      await cloneUmbrelAppsRepository(dir);
+      expect(true).toBe(true);
+    } catch (error) {
+      expect(error).toBeUndefined();
+    }
   });
 });

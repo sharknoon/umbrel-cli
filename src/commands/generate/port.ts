@@ -1,4 +1,4 @@
-import { getUmbrelAppYmls } from "../../modules/apps";
+import { getValidatedUmbrelAppYmls } from "../../modules/apps";
 import { getAppStoreType } from "../../modules/appstore";
 import { officialAppStoreDir } from "../../modules/paths";
 import { getRandomInt } from "../../utils/math";
@@ -9,11 +9,11 @@ export async function port(cwd: string) {
 }
 
 export async function generatePort(cwd: string): Promise<number> {
-  const officialUmbrelAppYmls = await getUmbrelAppYmls(officialAppStoreDir);
+  const officialUmbrelAppYmls = await getValidatedUmbrelAppYmls(officialAppStoreDir);
   const officialPorts = officialUmbrelAppYmls.map((app) => app.port);
   let communityPorts: number[] = [];
   if ((await getAppStoreType(cwd)) === "community") {
-    communityPorts = (await getUmbrelAppYmls(cwd)).map((app) => app.port);
+    communityPorts = (await getValidatedUmbrelAppYmls(cwd)).map((app) => app.port);
   }
   const allPorts = officialPorts.concat(communityPorts);
 

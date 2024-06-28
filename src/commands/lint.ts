@@ -7,7 +7,7 @@ import pc from "picocolors";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { getAllAppIds, getAppStoreType } from "../modules/appstore";
-import { getRawUmbrelAppYmls } from "../modules/apps";
+import { getUmbrelAppYmls } from "../modules/apps";
 import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 import dockerComposeYmlSchema from "../schemas/docker-compose.yml.schema.json";
 import { mockVariables } from "../modules/mock";
@@ -134,7 +134,7 @@ async function lintUmbrelAppYml(cwd: string, id: string): Promise<boolean> {
 
 async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
   let noLintingErrors = true;
-  const appYmls = await getRawUmbrelAppYmls(cwd);
+  const appYmls = await getUmbrelAppYmls(cwd);
   // Check if a port is used by multiple apps
   const ports = new Map<number, string>();
   for (const appYml of appYmls) {

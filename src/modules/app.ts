@@ -2,8 +2,15 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import YAML from "yaml";
 import { isAppStoreDirectory } from "./appstore";
+import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 
-export async function getAppYml(cwd: string, appId: string) {
+export async function getValidatedUmbrelAppYml(cwd: string, appId: string) {
+  const rawUmbrelAppYml = await getUmbrelAppYml(cwd, appId);
+  const schema = await umbrelAppYmlSchema(cwd);
+  return await schema.safeParseAsync(rawUmbrelAppYml);
+}
+
+export async function getUmbrelAppYml(cwd: string, appId: string) {
   if (!(await isAppStoreDirectory(cwd))) {
     return;
   }

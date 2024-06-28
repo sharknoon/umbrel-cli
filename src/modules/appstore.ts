@@ -18,6 +18,11 @@ export async function getAppStoreType(
     return appStoreTypeCache.get(cwd);
   }
 
+  if (!(await exists(cwd))) {
+    appStoreTypeCache.set(cwd, undefined);
+    return undefined;
+  }
+
   if (await exists(path.join(cwd, "umbrel-app-store.yml"))) {
     appStoreTypeCache.set(cwd, "community");
     return "community";

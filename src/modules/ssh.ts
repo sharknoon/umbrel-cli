@@ -15,7 +15,7 @@ export async function connect(
 export async function exec(
   client: Client,
   command: string
-): Promise<{ code: number; result: string }> {
+): Promise<{ stdout: string, stderr: string }> {
   return new Promise((resolve, reject) => {
     client.exec(command, (err, stream) => {
       if (err) {
@@ -23,20 +23,18 @@ export async function exec(
         return;
       }
 
-      let result = "";
+      let stdout = "";
+      let stderr = "";
       stream
-        .on("data", (chunk: unknown) => {
-          result += String(chunk);
-          process.stdout.write(String(chunk));
-        })
+        .on("data", (chunk: unknown) => (stdout += String(chunk)))
         .on("close", (code: number) => {
           if (code !== 0) {
-            reject(code);
+            reject(new Error(`Command failed with code ${code}`));
           } else {
-            resolve({ code, result });
+            resolve({ stdout, stderr });
           }
         })
-        .stderr.on("data", (chunk) => process.stderr.write(String(chunk)));
+        .stderr.on("data", (chunk: unknown) => (stderr += String(chunk)));
     });
   });
 }

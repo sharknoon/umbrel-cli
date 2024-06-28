@@ -21,7 +21,6 @@ import { MESSAGE_ABORTED } from "../../modules/console";
 import { exit } from "../../modules/process";
 
 export async function create(cwd: string, id?: string) {
-  console.clear();
   intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App Store "))}`);
   if (await isAppStoreDirectory(cwd)) {
     note(
