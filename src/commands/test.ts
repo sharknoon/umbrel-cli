@@ -231,6 +231,9 @@ export async function test(
     }
   } else {
     // Dev environment
+    const appStoreLocation =
+      "/home/ubuntu/umbrel/packages/umbreld/data/app-stores/getumbrel-umbrel-apps-github-53f74447";
+
     // Check if multipass is installed
     try {
       await execLocally("multipass --version");
@@ -249,13 +252,11 @@ export async function test(
     let vm: string;
     if (vms.length === 0) {
       note(
-        pc.cyan(
-          `multipass launch --name umbrel-dev --cpus 4 --memory 8G --disk 50G 23.10
+        `multipass launch --name umbrel-dev --cpus 4 --memory 8G --disk 50G 23.10
 multipass exec umbrel-dev -- sudo mkdir /opt/umbrel-mount
 multipass exec umbrel-dev -- sudo chown ubuntu:ubuntu /opt/umbrel-mount
 multipass exec umbrel-dev -- git clone https://github.com/getumbrel/umbrel.git /opt/umbrel-mount
-multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`
-        ),
+multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
         pc.blue("You can create a VM by running:")
       );
       cancel(
@@ -267,7 +268,8 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`
       return;
     } else if (vms.length === 1) {
       vm = vms[0];
-      log.success(pc.green(`👍 Using Multipass VM ${pc.bold(vm)}`));
+      host = `${vm}.local`;
+      log.info(pc.blue(`ℹ️ Using Multipass VM ${pc.bold(vm)}`));
     } else {
       const selection = await select({
         message: "Multiple Multipass VMs found! Please select the VM to use:",
@@ -285,13 +287,14 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`
     // Check if the app already exists on the umbrel and ask if the user wants to override it
     let appAlreadyExists;
     try {
-      await exec(
-        `multipass exec ${vm} -- ls /home/ubuntu/umbrel/packages/umbreld/data/app-stores/getumbrel-umbrel-apps-github-53f74447/${appId}`
+      await execLocally(
+        `multipass exec ${vm} -- ls ${appStoreLocation}/${appId}`
       );
       appAlreadyExists = true;
     } catch {
       appAlreadyExists = false;
     }
+
     if (appAlreadyExists) {
       const override = await confirm({
         message: pc.yellow(
@@ -305,14 +308,19 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`
         return;
       }
       await execLocally(
-        `multipass exec ${vm} -- rm -rf /home/ubuntu/umbrel/packages/umbreld/data/app-stores/getumbrel-umbrel-apps-github-53f74447/${appId}`
+        `multipass exec ${vm} -- rm -rf ${appStoreLocation}/${appId}`
       );
     }
+
+    // Copy the app to the umbrel
+    await execLocally(
+      `multipass transfer -r ${path.join(cwd, appId)} ${vm}:${appStoreLocation}`
+    );
 
     // Check if the app is already installed
     let isAlreadyInstalled = false;
     try {
-      const result = await exec(
+      const result = await execLocally(
         `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.state.query --appId ${appId}`
       );
       if (result.stdout.includes("not-installed")) {
@@ -380,6 +388,9 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`
 export async function listMultipassVMs() {
   try {
     const { stdout } = await execLocally("multipass list");
+    if (stdout.includes("No instances found")) {
+      return [];
+    }
     let lines = stdout.split("\n");
     // Remove "Name State IPv4 Image" Header
     if (lines.length > 0) {
@@ -400,25 +411,42 @@ export async function listMultipassVMs() {
 }
 
 async function execViaSSH(client: SSHClient, command: string) {
-  const s = spinner();
-  s.start(pc.cyan(`🏃 Executing ${pc.bold(command)}`));
-  const result = await execSSH(client, command);
-  s.stop(
-    `${pc.cyan(`🏃 Executing ${pc.bold(command)} ✔️`)}\n${pc.gray("│")}  ${pc.gray(cleanOutput(result.stdout || result.stderr))}`
-  );
-  return result;
+  return _execCommon(command, async () => await execSSH(client, command));
 }
 
 async function execLocally(command: string) {
-  const s = spinner();
-  s.start(pc.cyan(`🏃 Executing ${pc.bold(command)}`));
-  const result = await exec(command);
-  s.stop(
-    `${pc.cyan(`🏃 Executing ${pc.bold(command)} ✔️`)}\n${pc.gray("│")}  ${pc.gray(cleanOutput(result.stdout || result.stderr))}`
-  );
-  return result;
+  return _execCommon(command, async () => await exec(command));
 }
 
-function cleanOutput(output: string) {
-  return output.replace(/\n$/, " ");
+async function _execCommon(
+  command: string,
+  runnable: () => Promise<{ stdout: string; stderr: string }>
+) {
+  const s = spinner();
+  let formattedCommand = command;
+  // If the command is too long for the terminal window, shorten it to prevent muiltiple lines printed.
+  // Only the current line is being deleted for the spinner, therefore is should never exceed one line.
+  // 15 = "◇  🏃 Executing "
+  // 3 = "..."
+  // 1 = buffer to prevent the last emoji (✔️) from being cut off
+  if (15 + formattedCommand.length + 3 + 1 > process.stdout.columns) {
+    formattedCommand =
+      formattedCommand.slice(0, process.stdout.columns - 15 - 3 - 1 - 3) +
+      "...";
+  }
+  s.start(pc.cyan(`🏃 Executing ${pc.bold(formattedCommand)}`));
+
+  const result = await runnable();
+
+  const output = result.stdout || result.stderr;
+  const lines = output.split("\n");
+  while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
+    lines.pop();
+  }
+  const formattedOutput = pc.gray("\n│  " + lines.join("\n│  "));
+
+  s.stop(
+    `${pc.cyan(`🏃 Executing ${pc.bold(formattedCommand)} ✔️`)}${formattedOutput}`
+  );
+  return result;
 }
