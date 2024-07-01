@@ -3,7 +3,6 @@ import path from "node:path";
 import YAML from "yaml";
 import umbrelAppStoreYmlSchema from "../schemas/umbrel-app-store.yml.schema";
 import { exists } from "../utils/fs";
-import { officialAppStoreDir } from "./paths";
 import git from "isomorphic-git";
 import http from "isomorphic-git/http/node/index.js";
 
@@ -18,7 +17,7 @@ export async function getAppStoreType(
     return appStoreTypeCache.get(cwd);
   }
 
-  if (!(await exists(cwd))) {
+  if (!(await isAppStoreDirectory(cwd))) {
     appStoreTypeCache.set(cwd, undefined);
     return undefined;
   }
@@ -28,16 +27,8 @@ export async function getAppStoreType(
     return "community";
   }
 
-  const officialAppStoreAppIds = await getAllAppIds(officialAppStoreDir);
-  const appIds = await getAllAppIds(cwd);
-  // check if dir contains at least all the apps from the official app store
-  if (officialAppStoreAppIds.every((oid) => appIds.some((id) => id === oid))) {
-    appStoreTypeCache.set(cwd, "official");
-    return "official";
-  }
-
-  appStoreTypeCache.set(cwd, undefined);
-  return undefined;
+  appStoreTypeCache.set(cwd, "official");
+  return "official";
 }
 
 export async function getAllAppIds(cwd: string): Promise<string[]> {
@@ -48,8 +39,22 @@ export async function getAllAppIds(cwd: string): Promise<string[]> {
 }
 
 export async function isAppStoreDirectory(cwd: string) {
-  const appStoreType = await getAppStoreType(cwd);
-  return appStoreType !== undefined;
+  if (!(await exists(cwd))) {
+    return false;
+  }
+  const entries = await fs.readdir(cwd, {
+    withFileTypes: true,
+    recursive: true,
+  });
+  for (const entry of entries) {
+    if (entry.name !== "umbrel-app.yml") {
+      continue;
+    }
+    // Check if the depth of the file is 1
+    const difference = path.relative(cwd, entry.path);
+    return difference.split(path.sep).length === 1;
+  }
+  return false;
 }
 
 const umbrelAppStoreYmlCache = new Map();
