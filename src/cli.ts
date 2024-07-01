@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { hideBin } from "yargs/helpers";
 import { main } from "./parser";
 

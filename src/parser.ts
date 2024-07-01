@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import path from "node:path";
 import yargs from "yargs";
 import { create as createAppStore } from "./commands/appstore/create";
