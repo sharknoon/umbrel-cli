@@ -45,7 +45,7 @@ async function umbrelAppStoreYml(cwd: string): Promise<boolean> {
     printLintingError(result.title, result.message, result.severity)
   }
 
-  return lintingResults.length === 0;
+  return lintingResults.filter(r => r.severity === "error").length === 0;
 }
 
 async function readmeMd(cwd: string): Promise<boolean> {
@@ -79,7 +79,7 @@ async function umbrelAppYml(cwd: string, id: string): Promise<boolean> {
     printLintingError(result.title, result.message, result.severity)
   }
 
-  return lintingResults.length === 0;
+  return lintingResults.filter(r => r.severity === "error").length === 0;
 }
 
 async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
@@ -128,7 +128,7 @@ async function dockerComposeYml(cwd: string, id: string): Promise<boolean> {
     printLintingError(result.title, result.message, result.severity)
   }
 
-  return lintingResults.length === 0;
+  return lintingResults.filter(r => r.severity === "error").length === 0;
 }
 
 function printLintingError(

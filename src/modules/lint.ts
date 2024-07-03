@@ -39,11 +39,11 @@ export async function lintUmbrelAppStoreYml(content: string): Promise<LintingRes
     return [];
 }
 
-export async function lintUmbrelAppYml(content: string): Promise<LintingResult[]> {  
+export async function lintUmbrelAppYml(content: string): Promise<LintingResult[]> {
     // check if the file is valid yaml
     let umbrelAppYml;
     try {
-      umbrelAppYml = YAML.parse(content);
+        umbrelAppYml = YAML.parse(content);
     } catch (e) {
         return [{
             severity: "error",
@@ -51,7 +51,7 @@ export async function lintUmbrelAppYml(content: string): Promise<LintingResult[]
             message: String(e)
         }]
     }
-  
+
     // zod parse the file
     const schema = await umbrelAppYmlSchema();
     const result = await schema.safeParseAsync(umbrelAppYml);
@@ -62,9 +62,9 @@ export async function lintUmbrelAppYml(content: string): Promise<LintingResult[]
             message: issue.message
         }));
     }
-  
+
     return [];
-  }
+}
 
 export async function lintDockerComposeYml(content: string): Promise<LintingResult[]> {
     // Mock the variables
