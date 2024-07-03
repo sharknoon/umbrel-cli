@@ -42,6 +42,11 @@ export async function isAppStoreDirectory(cwd: string) {
   if (!(await exists(cwd))) {
     return false;
   }
+
+  if (await exists(path.join(cwd, "umbrel-app-store.yml"))) {
+    return true;
+  }
+
   const entries = await fs.readdir(cwd, {
     withFileTypes: true,
     recursive: true,
