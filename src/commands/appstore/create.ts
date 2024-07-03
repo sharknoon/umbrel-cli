@@ -77,6 +77,7 @@ export async function create(cwd: string, id?: string) {
   if (isCancel(result)) {
     cancel(MESSAGE_ABORTED);
     await exit();
+    return;
   }
   const appStoreType = result as "official" | "community";
 
@@ -134,6 +135,7 @@ async function createCommunityAppStore(dir: string) {
       onCancel: async () => {
         cancel(MESSAGE_ABORTED);
         await exit();
+        return;
       },
     }
   );

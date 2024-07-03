@@ -65,6 +65,7 @@ export async function create(cwd: string, id?: string) {
       onCancel: async () => {
         cancel(MESSAGE_ABORTED);
         await exit();
+        return;
       },
     }
   );
