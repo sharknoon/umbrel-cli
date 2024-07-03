@@ -1,9 +1,7 @@
-import path from "node:path";
 import { z } from "zod";
 import { isValidUrl } from "../utils/net";
-import { getAppStoreType } from "../modules/appstore";
 
-export default async function umbrelAppYmlSchema(cwd: string) {
+export default async function umbrelAppYmlSchema() {
   // Reference: https://github.com/getumbrel/umbrel/blob/master/packages/umbreld/source/modules/apps/schema.ts
   return z
     .object({
@@ -20,27 +18,12 @@ export default async function umbrelAppYmlSchema(cwd: string) {
       disabled: z.boolean().optional(),
       // enforce kebab case
       name: z.string().min(1).max(50),
-      tagline: z.string().min(1).max(100),
-      icon: z
-        .string()
-        .refine(
-          async (icon) => {
-            if ((await getAppStoreType(cwd)) === "official") {
-              if (!icon) return false;
-              return isValidUrl(icon);
-            } else {
-              if (!icon) return true;
-              return (
-                isValidUrl(icon) || /^\.(?:\/[a-z]+(?:-[a-z]+)*)+$/.test(icon)
-              );
-            }
-          },
-          {
-            message:
-              "The icon must be a valid URL or a relative path to a file in the app's directory.",
-          }
-        )
-        .optional(),
+      tagline: z.string().min(1).max(100).refine(async (tagline) =>
+        // Check if the taglines do not end with a period (except for those with multiple periods in it)
+        !(tagline.endsWith(".") && tagline.split(".").length === 2), {
+        message: "Taglines should not end with a period"
+      }),
+      icon: z.string().optional(),
       category: z.enum([
         "files",
         "bitcoin",
@@ -61,25 +44,7 @@ export default async function umbrelAppYmlSchema(cwd: string) {
       submission: z.string().url(),
       repo: z.string().url().or(z.literal("")),
       support: z.string().url(),
-      gallery: z
-        .string()
-        .refine(
-          async (image) => {
-            if ((await getAppStoreType(cwd)) === "community") {
-              return isValidUrl(image);
-            } else {
-              return isValidUrl(image) || path.parse(image).ext !== "";
-            }
-          },
-          {
-            message: `The gallery images must be a ${
-              (await getAppStoreType(cwd)) === "community"
-                ? "valid URL"
-                : "path to a file"
-            }.`,
-          }
-        )
-        .array(),
+      gallery: z.string().array(),
       releaseNotes: z.string().min(0).max(5000),
       dependencies: z.string().array(),
       permissions: z.enum(["STORAGE_DOWNLOADS"]).array().optional(),

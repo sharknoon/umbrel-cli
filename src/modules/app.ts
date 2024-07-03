@@ -6,7 +6,7 @@ import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 
 export async function getValidatedUmbrelAppYml(cwd: string, appId: string) {
   const rawUmbrelAppYml = await getUmbrelAppYml(cwd, appId);
-  const schema = await umbrelAppYmlSchema(cwd);
+  const schema = await umbrelAppYmlSchema();
   return await schema.safeParseAsync(rawUmbrelAppYml);
 }
 

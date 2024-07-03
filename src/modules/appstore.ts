@@ -66,7 +66,7 @@ export async function getUmbrelAppStoreYml(cwd: string) {
   if (!(await exists(file))) {
     return undefined;
   }
-  const schema = await umbrelAppStoreYmlSchema(cwd);
+  const schema = await umbrelAppStoreYmlSchema();
   const data = await schema.safeParseAsync(
     YAML.parse(await fs.readFile(file, "utf-8"))
   );

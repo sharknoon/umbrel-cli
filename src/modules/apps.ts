@@ -10,7 +10,7 @@ export async function getValidatedUmbrelAppYmls(
   const rawUmbrelAppYmls = await getUmbrelAppYmls(cwd);
   const umbrelAppYmls = [];
   for (const rawUmbrelAppYml of rawUmbrelAppYmls) {
-      const schema = await umbrelAppYmlSchema(cwd);
+      const schema = await umbrelAppYmlSchema();
       const result = await schema.safeParseAsync(rawUmbrelAppYml);
       if (result.success) {
         umbrelAppYmls.push(result.data);

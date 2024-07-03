@@ -1,8 +1,6 @@
 import { z } from "zod";
 
-// futureproofing with a cwd argument
-// eslint-disable-next-line
-export default async function umbrelAppStoreYmlSchema(_cwd: string) {
+export default async function umbrelAppStoreYmlSchema() {
   // Reference: https://github.com/getumbrel/umbrel/blob/master/packages/umbreld/source/modules/apps/schema.ts
   return z.object({
     id: z
