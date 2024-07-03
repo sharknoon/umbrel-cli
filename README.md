@@ -97,8 +97,25 @@ TODO screenshot
 
 To test your Umbrel apps, you need to have a running Umbrel. You can either buy an [Umbrel Home](https://umbrel.com/umbrel-home),
 [install it on a Raspberry Pi 4](https://github.com/getumbrel/umbrel/wiki/Raspberry-Pi-5-%E2%80%90-Boot-from-NVMe-or-USB) or newer
-(min. 4GB RAM) or on any [x86 computer](https://github.com/getumbrel/umbrel/wiki/Install-umbrelOS-on-x86-systems) or 
+(min. 4GB RAM) or on any [x86 computer](https://github.com/getumbrel/umbrel/wiki/Install-umbrelOS-on-x86-systems) or
 [install it in a virtual machine](https://github.com/getumbrel/umbrel/wiki/Install-umbrelOS-on-a-Linux-VM).
+
+## Library mode
+
+You can use some parts of this CLI programatically.
+
+- `umbrel lint`:
+
+  ```typescript
+  import { lintUmbrelAppYml, lintUmbrelAppStoreYml, lintDockerComposeYml } from "umbrel-cli/dist/lib.js";
+  import fs from "node:fs/promises";
+
+  const result = await lintUmbrelAppYml(await fs.readFile("path/to/umbrel-app.yml"));
+  console.log(result);
+  ```
+
+> [!TIP]
+> Please let me know via a GitHub Issue, if you want to see more CLI functions made accessible this way
 
 ## Development
 
