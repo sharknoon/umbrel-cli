@@ -11,7 +11,7 @@ import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 import { ZodIssueCode } from "zod";
 import { getSourceMapForKey } from "../utils/yaml";
 
-interface LintingResult {
+export interface LintingResult {
     id: ZodIssueCode | DefinedError["keyword"] | "invalid_yaml_syntax" | "invalid_docker_image_name" | "invalid_yaml_boolean_value",
     propertiesPath?: string;
     line?: { start: number, end: number }, // Starting at 1
