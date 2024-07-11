@@ -134,10 +134,17 @@ async function dockerComposeYml(cwd: string, id: string): Promise<boolean> {
   // Get a list of all files and directories in the app directory
   const rawFileList = await fs.readdir(path.resolve(cwd, id), {
     recursive: true,
+    withFileTypes: true,
   });
-  const fileList = rawFileList.map((f) =>
-    [id, ...f.split(path.sep)].join(path.posix.sep)
-  );
+  const fileList = rawFileList
+    .filter((f) => f.isDirectory() || f.isFile())
+    .map((f) => ({
+      path: path
+        .relative(cwd, path.resolve(f.parentPath, f.name))
+        .split(path.sep)
+        .join(path.posix.sep),
+      type: (f.isDirectory() ? "directory" : "file") as "file" | "directory",
+    }));
 
   const lintingResults = await lintDockerComposeYml(
     await fs.readFile(dockerComposeYmlPath, "utf-8"),

@@ -128,9 +128,14 @@ export async function lintUmbrelAppYml(
   return [];
 }
 
+export interface Entry {
+  path: string;
+  type: "file" | "directory";
+}
+
 export async function lintDockerComposeYml(
   content: string,
-  files: string[],
+  files: Entry[],
   id: string
 ): Promise<LintingResult[]> {
   // Mock the variables
@@ -328,7 +333,7 @@ export async function lintDockerComposeYml(
             if (!match) {
               continue;
             }
-            if (!files.includes(`${id}/${match}`)) {
+            if (!files.map((f) => f.path).includes(`${id}/${match}`)) {
               result.push({
                 id: "missing_file_or_directory",
                 propertiesPath: `services.${service}.volumes`,
@@ -355,7 +360,7 @@ export async function lintDockerComposeYml(
             if (!match) {
               continue;
             }
-            if (!files.includes(`${id}/${match}`)) {
+            if (!files.map((f) => f.path).includes(`${id}/${match}`)) {
               result.push({
                 id: "missing_file_or_directory",
                 propertiesPath: `services.${service}.volumes`,
