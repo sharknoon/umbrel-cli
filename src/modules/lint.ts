@@ -18,7 +18,8 @@ export interface LintingResult {
     | "invalid_yaml_syntax"
     | "invalid_docker_image_name"
     | "invalid_yaml_boolean_value"
-    | "invalid_app_data_dir_volume_mount";
+    | "invalid_app_data_dir_volume_mount"
+    | "invalid_submission_field";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -65,12 +66,13 @@ export async function lintUmbrelAppStoreYml(
 }
 
 export async function lintUmbrelAppYml(
-  content: string
+  content: string,
+  pullRequestUrl?: string
 ): Promise<LintingResult[]> {
   // check if the file is valid yaml
-  let umbrelAppYml;
+  let rawUmbrelAppYml;
   try {
-    umbrelAppYml = YAML.parse(content);
+    rawUmbrelAppYml = YAML.parse(content);
   } catch (e) {
     return [
       {
@@ -84,7 +86,7 @@ export async function lintUmbrelAppYml(
 
   // zod parse the file
   const schema = await umbrelAppYmlSchema();
-  const result = await schema.safeParseAsync(umbrelAppYml);
+  const result = await schema.safeParseAsync(rawUmbrelAppYml);
   if (!result.success) {
     return result.error.issues.map(
       (issue) =>
@@ -97,6 +99,20 @@ export async function lintUmbrelAppYml(
           message: issue.message,
         }) satisfies LintingResult
     );
+  }
+  const umbrelAppYml = result.data;
+
+  // If this is being called by another program in library mode (like a GitHub Action),
+  // check if the submission field corresponds to the pull request URL
+  if (pullRequestUrl && umbrelAppYml.submission !== pullRequestUrl) {
+    return [
+      {
+        id: "invalid_submission_field",
+        severity: "error",
+        title: `Invalid submission field "${umbrelAppYml.submission}"`,
+        message: `The submission field must be set to the URL of this pull request: ${pullRequestUrl}`,
+      },
+    ];
   }
 
   return [];
