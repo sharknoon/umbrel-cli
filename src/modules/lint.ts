@@ -17,7 +17,8 @@ export interface LintingResult {
     | DefinedError["keyword"]
     | "invalid_yaml_syntax"
     | "invalid_docker_image_name"
-    | "invalid_yaml_boolean_value";
+    | "invalid_yaml_boolean_value"
+    | "invalid_app_data_dir_volume_mount";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -194,10 +195,10 @@ export async function lintDockerComposeYml(
     */
 
   const result: LintingResult[] = [];
-  const services = Object.keys(dockerComposeYmlMocked.services ?? {});
+  const servicesMocked = Object.keys(dockerComposeYmlMocked.services ?? {});
 
   // Check if the image follows the naming convention
-  for (const service of services) {
+  for (const service of servicesMocked) {
     const image = dockerComposeYmlMocked.services?.[service].image;
     if (!image) {
       continue;
@@ -230,7 +231,7 @@ export async function lintDockerComposeYml(
   // Check if the keys "environment", "labels", and "extra_hosts" contains bare booleans (true instead of "true")
   // Note this is only an issue in Docker Compose V1. As soon as umbrelOS 0.5 is no longer supported, this check
   // is unnecessary as umbrelOS >= 1 uses Docker Compose V2 which allows bare boolean values
-  for (const service of services) {
+  for (const service of servicesMocked) {
     const environment = dockerComposeYmlMocked.services?.[service].environment;
     const labels = dockerComposeYmlMocked.services?.[service].labels;
     const extra_hosts = dockerComposeYmlMocked.services?.[service].extra_hosts;
@@ -268,6 +269,63 @@ export async function lintDockerComposeYml(
             title: `Invalid YAML boolean value for key "${key}"`,
             message: `Boolean values thould be strings like "${value}" instead of ${value}`,
           });
+        }
+      }
+    }
+  }
+
+  // Check if this app puts data directly into the ${APP_DATA_DIR} directory
+  // If so, print a warning, because this is not future proof. If the submitter wants to add something
+  // later, there is no clear distinction like when using directories.
+  let dockerComposeYml;
+  try {
+    dockerComposeYml = YAML.parse(content, {
+      merge: true,
+    });
+  } catch (e) {
+    // This should never happen, as we already parsed the file before
+    // But better be safe
+    return [
+      {
+        id: "invalid_yaml_syntax",
+        severity: "error",
+        title: "docker-compose.yml is not a valid YAML file",
+        message: String(e),
+      },
+    ];
+  }
+  const services = Object.keys(dockerComposeYml.services ?? {});
+  for (const service of services) {
+    const volumes = dockerComposeYml.services?.[service]?.volumes;
+    // if the volumes is an array
+    if (volumes && Array.isArray(volumes)) {
+      for (const volume of volumes) {
+        if (typeof volume === "string") {
+          if (volume.match(/\$\{?APP_DATA_DIR\}?\/?:/)) {
+            result.push({
+              id: "invalid_app_data_dir_volume_mount",
+              propertiesPath: `services.${service}.volumes`,
+              ...getSourceMapForKey(content, ["services", service, "volumes"]),
+              severity: "warning",
+              title: `Volume "${volume}"`,
+              message: `Volumes should not be mounted directly into the "\${APP_DATA_DIR}" directory! Please use a subdirectory like "\${APP_DATA_DIR}/data${volume.split(":")[1] ?? ""}" instead.`,
+            });
+          }
+        } else if (
+          typeof volume === "object" &&
+          "source" in volume &&
+          "target" in volume
+        ) {
+          if (volume.source.match(/\$\{?APP_DATA_DIR\}?\/?/)) {
+            result.push({
+              id: "invalid_app_data_dir_volume_mount",
+              propertiesPath: `services.${service}.volumes`,
+              ...getSourceMapForKey(content, ["services", service, "volumes"]),
+              severity: "warning",
+              title: `Volume "${volume.source}:${volume.target}"`,
+              message: `Volumes should not be mounted directly into the "\${APP_DATA_DIR}" directory! Please use a subdirectory like "source: \${APP_DATA_DIR}/data" and "target: ${volume.target ?? "/some/dir"}" instead.`,
+            });
+          }
         }
       }
     }
