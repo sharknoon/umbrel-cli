@@ -65,9 +65,14 @@ export async function lintUmbrelAppStoreYml(
   return [];
 }
 
+export interface LintUmbrelAppYmlOptions {
+  isNewAppSubmission?: boolean;
+  pullRequestUrl?: string;
+}
+
 export async function lintUmbrelAppYml(
   content: string,
-  pullRequestUrl?: string
+  options: LintUmbrelAppYmlOptions
 ): Promise<LintingResult[]> {
   // check if the file is valid yaml
   let rawUmbrelAppYml;
@@ -102,15 +107,19 @@ export async function lintUmbrelAppYml(
   }
   const umbrelAppYml = result.data;
 
-  // If this is being called by another program in library mode (like a GitHub Action),
-  // check if the submission field corresponds to the pull request URL
-  if (pullRequestUrl && umbrelAppYml.submission !== pullRequestUrl) {
+  // If this is being called by another program in library mode (like a GitHub Action)
+  // and this is a new app submission, check if the submission field corresponds to the pull request URL
+  if (
+    options.isNewAppSubmission &&
+    options.pullRequestUrl &&
+    umbrelAppYml.submission !== options.pullRequestUrl
+  ) {
     return [
       {
         id: "invalid_submission_field",
         severity: "error",
         title: `Invalid submission field "${umbrelAppYml.submission}"`,
-        message: `The submission field must be set to the URL of this pull request: ${pullRequestUrl}`,
+        message: `The submission field must be set to the URL of this pull request: ${options.pullRequestUrl}`,
       },
     ];
   }
