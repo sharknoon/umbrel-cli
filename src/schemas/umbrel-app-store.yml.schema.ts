@@ -18,5 +18,3 @@ export default async function umbrelAppStoreYmlSchema() {
     name: z.string().min(1).max(50),
   });
 }
-
-

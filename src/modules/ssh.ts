@@ -2,7 +2,7 @@ import { Client, ConnectConfig } from "ssh2";
 
 export async function connect(
   client: Client,
-  config: ConnectConfig
+  config: ConnectConfig,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     client
@@ -14,8 +14,8 @@ export async function connect(
 
 export async function exec(
   client: Client,
-  command: string
-): Promise<{ stdout: string, stderr: string }> {
+  command: string,
+): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     client.exec(command, (err, stream) => {
       if (err) {

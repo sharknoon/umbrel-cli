@@ -28,7 +28,7 @@ export default async function umbrelAppYmlSchema() {
             !(tagline.endsWith(".") && tagline.split(".").length === 2),
           {
             message: "Taglines should not end with a period",
-          }
+          },
         ),
       icon: z.string().optional(),
       category: z.enum([

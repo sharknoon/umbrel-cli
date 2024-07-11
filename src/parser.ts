@@ -41,7 +41,7 @@ export async function main(args: string[]) {
       },
       async (argv) => {
         await createAppStore(argv.w, argv.id as string | undefined);
-      }
+      },
     )
     .command(
       "app create [id]",
@@ -57,7 +57,7 @@ export async function main(args: string[]) {
         intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App "))}`);
         await requireAppStoreDirectory(argv.w);
         await createApp(argv.w, argv.id as string | undefined);
-      }
+      },
     )
     .command(
       "lint",
@@ -68,7 +68,7 @@ export async function main(args: string[]) {
         await requireAppStoreDirectory(argv.w);
         const result = await lint(argv.w);
         await exit(result);
-      }
+      },
     )
     .command(
       "port generate",
@@ -77,7 +77,7 @@ export async function main(args: string[]) {
       () => {},
       async (argv) => {
         await port(argv.w);
-      }
+      },
     )
     .command(
       "test [id]",
@@ -121,9 +121,9 @@ export async function main(args: string[]) {
           argv.host,
           argv.port,
           argv.username,
-          argv.password
+          argv.password,
         );
-      }
+      },
     )
     .alias("v", "version")
     .alias("h", "help")
@@ -139,14 +139,14 @@ export async function main(args: string[]) {
 async function requireAppStoreDirectory(cwd: string) {
   if (!(await isAppStoreDirectory(cwd))) {
     console.log(
-      pc.red(pc.bold("You are not in an Umbrel App Store directory!"))
+      pc.red(pc.bold("You are not in an Umbrel App Store directory!")),
     );
     console.log();
     console.log(`  Please navigate to an Umbrel App Store directory`);
     console.log(
       `  or create a new one using ${pc.cyan(
-        pc.bold("umbrel appstore create [id]")
-      )}.`
+        pc.bold("umbrel appstore create [id]"),
+      )}.`,
     );
     console.log();
     await exit(1);

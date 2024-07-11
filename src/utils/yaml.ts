@@ -7,7 +7,7 @@ export interface YamlSourceMap {
 
 export function getSourceMapForKey(
   content: string,
-  search: (string | number)[]
+  search: (string | number)[],
 ): YamlSourceMap | undefined {
   const lineCounter = new LineCounter();
   const parser = new Parser(lineCounter.addNewLine);
@@ -15,7 +15,7 @@ export function getSourceMapForKey(
 
   function traverseCST(
     doc: CST.Token,
-    search: (string | number)[]
+    search: (string | number)[],
   ): YamlSourceMap | undefined {
     switch (doc.type) {
       case "document":
@@ -38,7 +38,7 @@ export function getSourceMapForKey(
               ) {
                 const posValue = lineCounter.linePos(item.value.offset);
                 const posValueEnd = lineCounter.linePos(
-                  item.value.end[0].offset
+                  item.value.end[0].offset,
                 );
                 if (posKey.line === posValueEnd.line) {
                   return {

@@ -33,16 +33,16 @@ export async function test(
   host?: string,
   port?: number,
   username?: string,
-  password?: string
+  password?: string,
 ) {
   const appIds: string[] = await getAllAppIds(cwd);
   if (appId && !appIds.includes(appId)) {
     console.log(
       pc.red(
         `Could not find an app with the id ${pc.bold(
-          appId
-        )} in the app store ${pc.bold(cwd)}`
-      )
+          appId,
+        )} in the app store ${pc.bold(cwd)}`,
+      ),
     );
     await exit();
     return;
@@ -63,7 +63,7 @@ export async function test(
             validate: (value) => {
               if (!appIds.includes(value)) {
                 return `Could not find an app with the id ${pc.bold(
-                  value
+                  value,
                 )} in the app store ${pc.bold(cwd)}`;
               }
               return undefined;
@@ -95,7 +95,7 @@ export async function test(
         await exit();
         return;
       },
-    }
+    },
   );
   appId = result.appId;
   const environment = result.environment;
@@ -103,8 +103,8 @@ export async function test(
   if (environment === "prod") {
     log.info(
       pc.blue(
-        `ℹ️ Connecting to ${pc.bold(`${host}:${port}`)} as ${pc.bold(username)}`
-      )
+        `ℹ️ Connecting to ${pc.bold(`${host}:${port}`)} as ${pc.bold(username)}`,
+      ),
     );
 
     if (!password) {
@@ -131,7 +131,7 @@ export async function test(
       } catch (err) {
         log.error(pc.red("🚨 Error connecting to Umbrel: " + err));
         cancel(
-          `❗ Please check the ssh connection manually by typing ${pc.bold(pc.cyan(`ssh ${port !== 22 ? `-p ${port} ` : ""}${username}@${host}`))}.`
+          `❗ Please check the ssh connection manually by typing ${pc.bold(pc.cyan(`ssh ${port !== 22 ? `-p ${port} ` : ""}${username}@${host}`))}.`,
         );
         return;
       }
@@ -143,7 +143,7 @@ export async function test(
       if (await sftp.exists(appDir)) {
         const override = await confirm({
           message: pc.yellow(
-            `⚠️ The app ${pc.bold(appId)} already exists on your Umbrel. Do you want to override it?`
+            `⚠️ The app ${pc.bold(appId)} already exists on your Umbrel. Do you want to override it?`,
           ),
           initialValue: false,
         });
@@ -179,7 +179,7 @@ export async function test(
       // Check if the app is already installed
       const isIntalledQueryResult = await execViaSSH(
         ssh,
-        `umbreld client apps.state.query --appId ${appId}`
+        `umbreld client apps.state.query --appId ${appId}`,
       );
       let isAlreadyInstalled = false;
       if (!isIntalledQueryResult.stdout.includes("not-installed")) {
@@ -190,7 +190,7 @@ export async function test(
       if (isAlreadyInstalled) {
         const reinstall = await confirm({
           message: pc.yellow(
-            `⚠️ The app ${pc.bold(appId)} is already installed on your Umbrel. Do you want to reinstall it?`
+            `⚠️ The app ${pc.bold(appId)} is already installed on your Umbrel. Do you want to reinstall it?`,
           ),
           initialValue: false,
         });
@@ -201,13 +201,13 @@ export async function test(
         }
         const uninstallResult = await execViaSSH(
           ssh,
-          `umbreld client apps.uninstall.mutate --appId ${appId}`
+          `umbreld client apps.uninstall.mutate --appId ${appId}`,
         );
         if (uninstallResult.stdout.includes("false")) {
           log.error(
             pc.red(
-              `🚨 Error uninstalling the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}`
-            )
+              `🚨 Error uninstalling the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}`,
+            ),
           );
           return;
         }
@@ -216,13 +216,13 @@ export async function test(
       // Install the app
       const installResult = await execViaSSH(
         ssh,
-        `umbreld client apps.install.mutate --appId ${appId}`
+        `umbreld client apps.install.mutate --appId ${appId}`,
       );
       if (installResult.stdout.includes("false")) {
         log.error(
           pc.red(
-            `🚨 Error installing the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}.`
-          )
+            `🚨 Error installing the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}.`,
+          ),
         );
         return;
       }
@@ -240,8 +240,8 @@ export async function test(
     } catch {
       cancel(
         pc.red(
-          "🚨 Multipass is not installed on your system. Please install it and try again."
-        )
+          "🚨 Multipass is not installed on your system. Please install it and try again.",
+        ),
       );
       await exit();
       return;
@@ -257,12 +257,12 @@ multipass exec umbrel-dev -- sudo mkdir /opt/umbrel-mount
 multipass exec umbrel-dev -- sudo chown ubuntu:ubuntu /opt/umbrel-mount
 multipass exec umbrel-dev -- git clone https://github.com/getumbrel/umbrel.git /opt/umbrel-mount
 multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
-        pc.blue("You can create a VM by running:")
+        pc.blue("You can create a VM by running:"),
       );
       cancel(
         pc.red(
-          "🚨 No VMs found. Please create a VM using Multipass and try again."
-        )
+          "🚨 No VMs found. Please create a VM using Multipass and try again.",
+        ),
       );
       await exit();
       return;
@@ -288,7 +288,7 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
     let appAlreadyExists;
     try {
       await execLocally(
-        `multipass exec ${vm} -- ls ${appStoreLocation}/${appId}`
+        `multipass exec ${vm} -- ls ${appStoreLocation}/${appId}`,
       );
       appAlreadyExists = true;
     } catch {
@@ -298,7 +298,7 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
     if (appAlreadyExists) {
       const override = await confirm({
         message: pc.yellow(
-          `⚠️ The app ${pc.bold(appId)} already exists on your Umbrel. Do you want to override it?`
+          `⚠️ The app ${pc.bold(appId)} already exists on your Umbrel. Do you want to override it?`,
         ),
         initialValue: false,
       });
@@ -308,20 +308,20 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
         return;
       }
       await execLocally(
-        `multipass exec ${vm} -- rm -rf ${appStoreLocation}/${appId}`
+        `multipass exec ${vm} -- rm -rf ${appStoreLocation}/${appId}`,
       );
     }
 
     // Copy the app to the umbrel
     await execLocally(
-      `multipass transfer -r ${path.join(cwd, appId)} ${vm}:${appStoreLocation}`
+      `multipass transfer -r ${path.join(cwd, appId)} ${vm}:${appStoreLocation}`,
     );
 
     // Check if the app is already installed
     let isAlreadyInstalled = false;
     try {
       const result = await execLocally(
-        `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.state.query --appId ${appId}`
+        `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.state.query --appId ${appId}`,
       );
       if (result.stdout.includes("not-installed")) {
         isAlreadyInstalled = false;
@@ -331,15 +331,15 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
     } catch (err) {
       log.error(
         pc.red(
-          pc.bold("🚨 Error checking if the app was already installed: ") + err
-        )
+          pc.bold("🚨 Error checking if the app was already installed: ") + err,
+        ),
       );
       return;
     }
     if (isAlreadyInstalled) {
       const reinstall = await confirm({
         message: pc.yellow(
-          `⚠️ The app ${pc.bold(appId)} is already installed on your Multipass VM. Do you want to reinstall it?`
+          `⚠️ The app ${pc.bold(appId)} is already installed on your Multipass VM. Do you want to reinstall it?`,
         ),
         initialValue: false,
       });
@@ -349,13 +349,13 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
         return;
       }
       await execLocally(
-        `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.uninstall.mutate --appId ${appId}`
+        `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.uninstall.mutate --appId ${appId}`,
       );
     }
 
     // Install the app
     await execLocally(
-      `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.install.mutate --appId ${appId}`
+      `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.install.mutate --appId ${appId}`,
     );
   }
 
@@ -366,9 +366,9 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
     log.error(
       pc.red(
         `🚨 The app ${pc.bold(appId)} does not have a port defined in its ${pc.bold(
-          "umbrel-app.yml"
-        )}`
-      )
+          "umbrel-app.yml",
+        )}`,
+      ),
     );
     return;
   }
@@ -380,8 +380,8 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
   await open(url.toString());
   outro(
     pc.blue(
-      "ℹ️ If the page does not open immediatly, please wait a few seconds and refresh the page."
-    )
+      "ℹ️ If the page does not open immediatly, please wait a few seconds and refresh the page.",
+    ),
   );
 }
 
@@ -420,7 +420,7 @@ async function execLocally(command: string) {
 
 async function _execCommon(
   command: string,
-  runnable: () => Promise<{ stdout: string; stderr: string }>
+  runnable: () => Promise<{ stdout: string; stderr: string }>,
 ) {
   const s = spinner();
   let formattedCommand = command;
@@ -446,7 +446,7 @@ async function _execCommon(
   const formattedOutput = pc.gray("\n│  " + lines.join("\n│  "));
 
   s.stop(
-    `${pc.cyan(`🏃 Executing ${pc.bold(formattedCommand)} ✔️`)}${formattedOutput}`
+    `${pc.cyan(`🏃 Executing ${pc.bold(formattedCommand)} ✔️`)}${formattedOutput}`,
   );
   return result;
 }

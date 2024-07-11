@@ -1,6 +1,6 @@
 /**
  * Checks if a given URL is valid.
- * 
+ *
  * @param url - The URL to validate.
  * @returns `true` if the URL is valid, `false` otherwise.
  */

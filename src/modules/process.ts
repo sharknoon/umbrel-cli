@@ -15,9 +15,11 @@ async function checkForUpdate() {
   if (updateAvailable) {
     console.log();
     console.log(
-      `  New version available! ${pc.gray(`(${currentVersion} -> ${latestVersion})`)}`
+      `  New version available! ${pc.gray(`(${currentVersion} -> ${latestVersion})`)}`,
     );
-    console.log(`  Update with ${pc.cyan(pc.bold("npm update -g umbrel-cli"))}`);
+    console.log(
+      `  Update with ${pc.cyan(pc.bold("npm update -g umbrel-cli"))}`,
+    );
     console.log();
   }
 }

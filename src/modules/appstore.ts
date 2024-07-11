@@ -11,7 +11,7 @@ const appStoreTypeCache = new Map<
   "official" | "community" | undefined
 >();
 export async function getAppStoreType(
-  cwd: string
+  cwd: string,
 ): Promise<"official" | "community" | undefined> {
   if (appStoreTypeCache.has(cwd)) {
     return appStoreTypeCache.get(cwd);
@@ -73,7 +73,7 @@ export async function getUmbrelAppStoreYml(cwd: string) {
   }
   const schema = await umbrelAppStoreYmlSchema();
   const data = await schema.safeParseAsync(
-    YAML.parse(await fs.readFile(file, "utf-8"))
+    YAML.parse(await fs.readFile(file, "utf-8")),
   );
   umbrelAppStoreYmlCache.set(file, data.data);
   return data.data;

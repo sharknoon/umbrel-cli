@@ -1,6 +1,6 @@
 {
   "name": "umbrel-cli",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "A small cli tool to help you create and maintain your umbrel apps",
   "type": "module",
   "main": "./dist/cli.js",
@@ -15,9 +15,11 @@
     "dev": "npm run build && node dist/cli.js",
     "build": "rollup --config rollup.config.ts --configPlugin typescript",
     "test": "vitest run",
-    "lint": "eslint .",
+    "lint": "prettier . --check && eslint .",
+    "format": "prettier . --write",
     "prepublishOnly": "npm run build",
-    "schema": "json2ts \"src/schemas/*.json\" src/schemas"
+    "schema": "json2ts \"src/schemas/*.json\" src/schemas",
+    "prepare": "npm run schema"
   },
   "repository": {
     "type": "git",

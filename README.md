@@ -1,4 +1,3 @@
-
 # umbrelCLI
 
 [![Node.js CI](https://github.com/sharknoon/umbrel-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/sharknoon/umbrel-cli/actions/workflows/ci.yml)
@@ -72,12 +71,12 @@ also against those ports.
 
 #### Options
 
-| Option | Description | Default |
-|--------|---------------|------------|
-|`-H`, `--host`| Changes the host of your umbrel to connect to | `umbrel.local` |
-|`-P`, `--port`| Changes the port of your umbrel to connect to | `22` |
-|`-u`, `--username` | Changes the username of your umbrel to connect to | `umbrel` |
-|`-p`, `--password` | Sets the password of your umbrel to connect to | - |
+| Option             | Description                                       | Default        |
+| ------------------ | ------------------------------------------------- | -------------- |
+| `-H`, `--host`     | Changes the host of your umbrel to connect to     | `umbrel.local` |
+| `-P`, `--port`     | Changes the port of your umbrel to connect to     | `22`           |
+| `-u`, `--username` | Changes the username of your umbrel to connect to | `umbrel`       |
+| `-p`, `--password` | Sets the password of your umbrel to connect to    | -              |
 
 This command connects to your umbrel and installs the app there. If the app is already installed,
 or a older version of the app is already present in the app store, it asks you if you would like
@@ -107,10 +106,16 @@ You can use some parts of this CLI programatically.
 - `umbrel lint`:
 
   ```typescript
-  import { lintUmbrelAppYml, lintUmbrelAppStoreYml, lintDockerComposeYml } from "umbrel-cli/dist/lib.js";
+  import {
+    lintUmbrelAppYml,
+    lintUmbrelAppStoreYml,
+    lintDockerComposeYml,
+  } from "umbrel-cli/dist/lib.js";
   import fs from "node:fs/promises";
 
-  const result = await lintUmbrelAppYml(await fs.readFile("path/to/umbrel-app.yml"));
+  const result = await lintUmbrelAppYml(
+    await fs.readFile("path/to/umbrel-app.yml"),
+  );
   console.log(result);
   ```
 
@@ -135,8 +140,8 @@ Prerequisites:
 
 - [Multipass](https://multipass.run/install)
 
-This method diviates from the 
-[official installation method](https://github.com/getumbrel/umbrel-apps?tab=readme-ov-file#3-testing-the-app-on-umbrel) 
+This method diviates from the
+[official installation method](https://github.com/getumbrel/umbrel-apps?tab=readme-ov-file#3-testing-the-app-on-umbrel)
 in that it clones the repository inside the vm instead of on the machine. This is necessary to ensure that in Windows the
 correct +x flags are set and the line breaks (\n instead of \r\n) are correct.
 

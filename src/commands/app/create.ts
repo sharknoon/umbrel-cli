@@ -67,7 +67,7 @@ export async function create(cwd: string, id?: string) {
         await exit();
         return;
       },
-    }
+    },
   );
 
   // Create the app directory
@@ -78,8 +78,8 @@ export async function create(cwd: string, id?: string) {
   const manifestTemplate = Handlebars.compile(
     await fs.readFile(
       path.resolve(__dirname, "templates", "app", "umbrel-app.yml.handlebars"),
-      "utf-8"
-    )
+      "utf-8",
+    ),
   );
   const manifest = manifestTemplate({
     appId,
@@ -96,16 +96,16 @@ export async function create(cwd: string, id?: string) {
         __dirname,
         "templates",
         "app",
-        "docker-compose.yml.handlebars"
+        "docker-compose.yml.handlebars",
       ),
-      "utf-8"
-    )
+      "utf-8",
+    ),
   );
   const dockerCompose = dockerComposeTemplate({});
   await fs.writeFile(
     path.join(appDir, "docker-compose.yml"),
     dockerCompose,
-    "utf-8"
+    "utf-8",
   );
 
   // Create exports.sh
@@ -113,8 +113,8 @@ export async function create(cwd: string, id?: string) {
     const exportsTemplate = Handlebars.compile(
       await fs.readFile(
         path.resolve(__dirname, "templates", "app", "exports.sh.handlebars"),
-        "utf-8"
-      )
+        "utf-8",
+      ),
     );
     const exports = exportsTemplate({});
     await fs.writeFile(path.join(appDir, "exports.sh"), exports, "utf-8");
@@ -125,16 +125,16 @@ export async function create(cwd: string, id?: string) {
  - add your containers to the ${pc.cyan(pc.bold("docker-compose.yml"))}${
    needsExportSh
      ? `\n - expose your environment variables for other apps in ${pc.cyan(
-         pc.bold("exports.sh")
+         pc.bold("exports.sh"),
        )}`
      : ""
  }`,
-    "Next steps"
+    "Next steps",
   );
 
   outro(
     `Problems? ${pc.underline(
-      pc.cyan("https://github.com/sharknoon/umbrel-cli/issues")
-    )}`
+      pc.cyan("https://github.com/sharknoon/umbrel-cli/issues"),
+    )}`,
   );
 }

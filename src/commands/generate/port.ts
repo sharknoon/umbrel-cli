@@ -9,11 +9,14 @@ export async function port(cwd: string) {
 }
 
 export async function generatePort(cwd: string): Promise<number> {
-  const officialUmbrelAppYmls = await getValidatedUmbrelAppYmls(officialAppStoreDir);
+  const officialUmbrelAppYmls =
+    await getValidatedUmbrelAppYmls(officialAppStoreDir);
   const officialPorts = officialUmbrelAppYmls.map((app) => app.port);
   let communityPorts: number[] = [];
   if ((await getAppStoreType(cwd)) === "community") {
-    communityPorts = (await getValidatedUmbrelAppYmls(cwd)).map((app) => app.port);
+    communityPorts = (await getValidatedUmbrelAppYmls(cwd)).map(
+      (app) => app.port,
+    );
   }
   const allPorts = officialPorts.concat(communityPorts);
 

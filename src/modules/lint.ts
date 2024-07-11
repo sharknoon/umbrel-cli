@@ -28,10 +28,11 @@ export interface LintingResult {
   severity: "error" | "warning" | "info";
   title: string;
   message: string;
+  file: string;
 }
 
 export async function lintUmbrelAppStoreYml(
-  content: string
+  content: string,
 ): Promise<LintingResult[]> {
   // check if the file is valid yaml
   let umbrelAppStoreYml;
@@ -44,6 +45,7 @@ export async function lintUmbrelAppStoreYml(
         severity: "error",
         title: "umbrel-app-store.yml is not a valid YAML file",
         message: String(e),
+        file: "umbrel-app-store.yml",
       },
     ];
   }
@@ -61,7 +63,8 @@ export async function lintUmbrelAppStoreYml(
           severity: "error",
           title: issue.path.join("."),
           message: issue.message,
-        }) satisfies LintingResult
+          file: "umbrel-app-store.yml",
+        }) satisfies LintingResult,
     );
   }
   return [];
@@ -74,7 +77,8 @@ export interface LintUmbrelAppYmlOptions {
 
 export async function lintUmbrelAppYml(
   content: string,
-  options: LintUmbrelAppYmlOptions = {}
+  id: string,
+  options: LintUmbrelAppYmlOptions = {},
 ): Promise<LintingResult[]> {
   // check if the file is valid yaml
   let rawUmbrelAppYml;
@@ -87,6 +91,7 @@ export async function lintUmbrelAppYml(
         severity: "error",
         title: "umbrel-app.yml is not a valid YAML file",
         message: String(e),
+        file: `${id}/umbrel-app.yml`,
       },
     ];
   }
@@ -104,7 +109,8 @@ export async function lintUmbrelAppYml(
           severity: "error",
           title: issue.path.join("."),
           message: issue.message,
-        }) satisfies LintingResult
+          file: `${id}/umbrel-app.yml`,
+        }) satisfies LintingResult,
     );
   }
   const umbrelAppYml = result.data;
@@ -122,6 +128,7 @@ export async function lintUmbrelAppYml(
         severity: "error",
         title: `Invalid submission field "${umbrelAppYml.submission}"`,
         message: `The submission field must be set to the URL of this pull request: ${options.pullRequestUrl}`,
+        file: `${id}/umbrel-app.yml`,
       },
     ];
   }
@@ -136,8 +143,8 @@ export interface Entry {
 
 export async function lintDockerComposeYml(
   content: string,
+  id: string,
   files: Entry[],
-  id: string
 ): Promise<LintingResult[]> {
   // Mock the variables
   const rawDockerComposeYmlMocked = await mockVariables(content);
@@ -155,6 +162,7 @@ export async function lintDockerComposeYml(
         severity: "error",
         title: "docker-compose.yml is not a valid YAML file",
         message: String(e),
+        file: `${id}/docker-compose.yml`,
       },
     ];
   }
@@ -176,12 +184,13 @@ export async function lintDockerComposeYml(
             .join("."),
           ...getSourceMapForKey(
             content,
-            path.normalize(error.instancePath).split(path.sep).filter(Boolean)
+            path.normalize(error.instancePath).split(path.sep).filter(Boolean),
           ),
           severity: "error",
           title: error.instancePath,
           message: error.message ?? "Unknown error",
-        }) satisfies LintingResult
+          file: `${id}/docker-compose.yml`,
+        }) satisfies LintingResult,
     );
   }
 
@@ -203,6 +212,7 @@ export async function lintDockerComposeYml(
         severity: "error",
         title: `Invalid image name "${image}"`,
         message: `Images should be named like "<name>:<version-tag>@<sha256>"`,
+        file: `${id}/docker-compose.yml`,
       });
     } else {
       const [, version] = imageMatch.slice(1);
@@ -214,6 +224,7 @@ export async function lintDockerComposeYml(
           severity: "warning",
           title: `Invalid image tag "${version}"`,
           message: `Images should not use the "latest" tag`,
+          file: `${id}/docker-compose.yml`,
         });
       }
     }
@@ -259,6 +270,7 @@ export async function lintDockerComposeYml(
             severity: "error",
             title: `Invalid YAML boolean value for key "${key}"`,
             message: `Boolean values thould be strings like "${value}" instead of ${value}`,
+            file: `${id}/docker-compose.yml`,
           });
         }
       }
@@ -282,6 +294,7 @@ export async function lintDockerComposeYml(
         severity: "error",
         title: "docker-compose.yml is not a valid YAML file",
         message: String(e),
+        file: `${id}/docker-compose.yml`,
       },
     ];
   }
@@ -300,6 +313,7 @@ export async function lintDockerComposeYml(
               severity: "warning",
               title: `Volume "${volume}"`,
               message: `Volumes should not be mounted directly into the "\${APP_DATA_DIR}" directory! Please use a subdirectory like "\${APP_DATA_DIR}/data${volume.split(":")[1] ?? ""}" instead.`,
+              file: `${id}/docker-compose.yml`,
             });
           }
         } else if (
@@ -315,6 +329,7 @@ export async function lintDockerComposeYml(
               severity: "warning",
               title: `Volume "${volume.source}:${volume.target}"`,
               message: `Volumes should not be mounted directly into the "\${APP_DATA_DIR}" directory! Please use a subdirectory like "source: \${APP_DATA_DIR}/data" and "target: ${volume.target ?? "/some/dir"}" instead.`,
+              file: `${id}/docker-compose.yml`,
             });
           }
         }
@@ -346,6 +361,7 @@ export async function lintDockerComposeYml(
                 severity: "error",
                 title: `Missing file/directory "/${id}/${match}"`,
                 message: `The volume "${volume}" tries to mount the file/directory "/${id}/${match}", but it is not present! Please create that file/directory!`,
+                file: `${id}/docker-compose.yml`,
               });
             }
           }
@@ -356,7 +372,7 @@ export async function lintDockerComposeYml(
         ) {
           if (volume.source.match(/\$\{?APP_DATA_DIR\}?/)) {
             const match = volume.source.match(
-              /\$\{?APP_DATA_DIR\}?\/?(.*?)$/
+              /\$\{?APP_DATA_DIR\}?\/?(.*?)$/,
             )?.[1];
             if (!match) {
               continue;
@@ -373,6 +389,7 @@ export async function lintDockerComposeYml(
                 severity: "error",
                 title: `Missing file/directory "/${id}/${match}"`,
                 message: `The volume "${volume.source}:${volume.target}" tries to mount the file/directory "/${id}/${match}", but it is not present! Please create that file/directory!`,
+                file: `${id}/docker-compose.yml`,
               });
             }
           }
@@ -391,8 +408,8 @@ export function lintDirectoryStructure(files: Entry[]): LintingResult[] {
     .filter(
       (f) =>
         !files.some(
-          (f2) => f2.path.length > f.path.length && f2.path.startsWith(f.path)
-        )
+          (f2) => f2.path.length > f.path.length && f2.path.startsWith(f.path),
+        ),
     );
   const result: LintingResult[] = [];
   for (const directory of emptyDirectories) {
@@ -401,6 +418,7 @@ export function lintDirectoryStructure(files: Entry[]): LintingResult[] {
       severity: "error",
       title: `Empty directory "${directory.path}"`,
       message: `Please add a ".gitkeep" file to the directory "${directory.path}". This is necessary to ensure the correct permissions of the directory after cloning!`,
+      file: directory.path,
     });
   }
   return result;

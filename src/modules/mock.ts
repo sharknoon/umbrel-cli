@@ -11,7 +11,9 @@ interface Variable {
 }
 
 function extractVariables(input: string): Variable[] {
-  const variables = input.matchAll(/\$(?:([a-zA-Z0-9_\-:]+)|\{([a-zA-Z0-9_\-:]+)\})/g);
+  const variables = input.matchAll(
+    /\$(?:([a-zA-Z0-9_\-:]+)|\{([a-zA-Z0-9_\-:]+)\})/g,
+  );
   return [...variables].map((v) => ({
     fullVariable: v[0],
     variable: v[1] ?? v[2],

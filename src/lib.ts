@@ -1,1 +1,1 @@
-export * from "./modules/lint"
+export * from "./modules/lint";

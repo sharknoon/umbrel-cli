@@ -29,7 +29,7 @@ export async function lint(cwd: string): Promise<number> {
   console.log(
     noLintingErrors
       ? pc.green("No linting errors found 🎉")
-      : pc.red("Linting failed.")
+      : pc.red("Linting failed."),
   );
   return noLintingErrors ? 0 : 1;
 }
@@ -45,13 +45,13 @@ async function umbrelAppStoreYml(cwd: string): Promise<boolean> {
   if (!(await exists(umbrelAppStoreYmlPath))) {
     printLintingError(
       "umbrel-app-store.yml does not exist",
-      "For community app stores, the file umbrel-app-store.yml is required"
+      "For community app stores, the file umbrel-app-store.yml is required",
     );
     return false;
   }
 
   const lintingResults = await lintUmbrelAppStoreYml(
-    await fs.readFile(umbrelAppStoreYmlPath, "utf-8")
+    await fs.readFile(umbrelAppStoreYmlPath, "utf-8"),
   );
   for (const result of lintingResults) {
     printLintingError(result.title, result.message, result.severity);
@@ -67,7 +67,7 @@ async function readmeMd(cwd: string): Promise<boolean> {
     printLintingError(
       "README.md does not exist",
       "A README.md file is highly recommended to tell users, how to install your App Store and what apps are available",
-      "warning"
+      "warning",
     );
     return false;
   }
@@ -81,13 +81,14 @@ async function umbrelAppYml(cwd: string, id: string): Promise<boolean> {
   if (!(await exists(umbrelAppYmlPath))) {
     printLintingError(
       "umbrel-app.yml does not exist",
-      `Every app needs a manifest file called "umbrel-app.yml" at the root of the app directory`
+      `Every app needs a manifest file called "umbrel-app.yml" at the root of the app directory`,
     );
     return false;
   }
 
   const lintingResults = await lintUmbrelAppYml(
-    await fs.readFile(umbrelAppYmlPath, "utf-8")
+    await fs.readFile(umbrelAppYmlPath, "utf-8"),
+    id,
   );
   for (const result of lintingResults) {
     printLintingError(result.title, result.message, result.severity);
@@ -116,7 +117,7 @@ async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
       const existintAppName = ports.get(appYml.port);
       printLintingError(
         `Port ${appYml.port} is already used by ${existintAppName}`,
-        `Each app must use a unique port`
+        `Each app must use a unique port`,
       );
     }
     ports.set(appYml.port, appYml.name);
@@ -135,7 +136,7 @@ function lintDirectoryStructure(files: Entry[]): boolean {
 async function dockerComposeYml(
   cwd: string,
   id: string,
-  files: Entry[]
+  files: Entry[],
 ): Promise<boolean> {
   console.log(`Checking ${path.join(id, "docker-compose.yml")}`);
 
@@ -144,15 +145,15 @@ async function dockerComposeYml(
   if (!(await exists(dockerComposeYmlPath))) {
     printLintingError(
       "docker-compose.yml does not exist",
-      `Every app needs a docker compose file called "docker-compose.yml" at the root of the app directory`
+      `Every app needs a docker compose file called "docker-compose.yml" at the root of the app directory`,
     );
     return false;
   }
 
   const lintingResults = await lintDockerComposeYml(
     await fs.readFile(dockerComposeYmlPath, "utf-8"),
+    id,
     files,
-    id
   );
   for (const result of lintingResults) {
     printLintingError(result.title, result.message, result.severity);
@@ -164,7 +165,7 @@ async function dockerComposeYml(
 function printLintingError(
   title: string,
   message: string,
-  severity: "error" | "warning" | "info" = "error"
+  severity: "error" | "warning" | "info" = "error",
 ) {
   let level;
   switch (severity) {

@@ -88,7 +88,8 @@ describe("mockVariables", () => {
   });
 
   it("should replace multiple variables with their corresponding mocks", async () => {
-    const input = "Username: $APP_USER, Password: $APP_PASS, Directory: $DATA_DIR";
+    const input =
+      "Username: $APP_USER, Password: $APP_PASS, Directory: $DATA_DIR";
     const expectedOutput =
       "Username: username, Password: password, Directory: /path/to/dir";
 

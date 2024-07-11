@@ -15,7 +15,10 @@ import {
 import pc from "picocolors";
 import git from "isomorphic-git";
 import Handlebars from "handlebars";
-import { cloneUmbrelAppsRepository, isAppStoreDirectory } from "../../modules/appstore";
+import {
+  cloneUmbrelAppsRepository,
+  isAppStoreDirectory,
+} from "../../modules/appstore";
 import { __dirname } from "../../utils/fs";
 import { MESSAGE_ABORTED } from "../../modules/console";
 import { exit } from "../../modules/process";
@@ -25,15 +28,15 @@ export async function create(cwd: string, id?: string) {
   if (await isAppStoreDirectory(cwd)) {
     note(
       `  Get started by creating a new app using: ${pc.cyan(
-        pc.bold("umbrel app create")
+        pc.bold("umbrel app create"),
       )}
   If you want to init a new App Store anyway, please navigate to a different directory.`,
-      pc.green("You are already in an Umbrel App Store directory 🚀")
+      pc.green("You are already in an Umbrel App Store directory 🚀"),
     );
     outro(
       `Problems? ${pc.underline(
-        pc.cyan("https://github.com/sharknoon/umbrel-cli/issues")
-      )}`
+        pc.cyan("https://github.com/sharknoon/umbrel-cli/issues"),
+      )}`,
     );
     await exit(1);
   }
@@ -90,16 +93,16 @@ export async function create(cwd: string, id?: string) {
   note(
     `Create your first app with\n${pc.cyan(
       pc.bold(
-        `cd ${path.relative(path.resolve(), pathToAppStore)}\numbrel app create`
-      )
+        `cd ${path.relative(path.resolve(), pathToAppStore)}\numbrel app create`,
+      ),
     )}`,
-    "Next steps"
+    "Next steps",
   );
 
   outro(
     `Problems? ${pc.underline(
-      pc.cyan("https://github.com/sharknoon/umbrel-cli/issues")
-    )}`
+      pc.cyan("https://github.com/sharknoon/umbrel-cli/issues"),
+    )}`,
   );
 }
 
@@ -137,7 +140,7 @@ async function createCommunityAppStore(dir: string) {
         await exit();
         return;
       },
-    }
+    },
   );
 
   const s = spinner();
@@ -153,24 +156,24 @@ async function createCommunityAppStore(dir: string) {
         __dirname,
         "templates",
         "appstore",
-        "umbrel-app-store.yml.handlebars"
+        "umbrel-app-store.yml.handlebars",
       ),
-      "utf-8"
-    )
+      "utf-8",
+    ),
   );
   const umbrelAppStoreYml = umbrelAppStoreTemplate({ project });
   await fs.writeFile(
     path.join(dir, "umbrel-app-store.yml"),
     umbrelAppStoreYml,
-    "utf-8"
+    "utf-8",
   );
 
   // .gitignore
   const gitignoreTemplate = Handlebars.compile(
     await fs.readFile(
       path.resolve(__dirname, "templates", "appstore", "gitignore.handlebars"),
-      "utf-8"
-    )
+      "utf-8",
+    ),
   );
   const gitignore = gitignoreTemplate({});
   await fs.writeFile(path.join(dir, ".gitignore"), gitignore, "utf-8");
@@ -179,8 +182,8 @@ async function createCommunityAppStore(dir: string) {
   const readmeTemplate = Handlebars.compile(
     await fs.readFile(
       path.resolve(__dirname, "templates", "appstore", "README.md.handlebars"),
-      "utf-8"
-    )
+      "utf-8",
+    ),
   );
   const readme = readmeTemplate({ project });
   await fs.writeFile(path.join(dir, "README.md"), readme, "utf-8");

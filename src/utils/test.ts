@@ -1,4 +1,6 @@
-export async function catchStdout(callback: () => Promise<void>): Promise<string> {
+export async function catchStdout(
+  callback: () => Promise<void>,
+): Promise<string> {
   const originalLog = console.log;
   const originalError = console.error;
   const originalWarn = console.warn;

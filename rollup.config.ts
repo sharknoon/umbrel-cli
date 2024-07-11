@@ -23,7 +23,7 @@ export default defineConfig([
         targets: [{ src: "src/templates", dest: "dist" }],
       }),
       nodeResolve(),
-      del({ targets: "dist/*" })
+      del({ targets: "dist/*" }),
     ],
   },
   {
@@ -40,7 +40,7 @@ export default defineConfig([
       copy({
         targets: [{ src: "src/templates", dest: "dist" }],
       }),
-      nodeResolve()
+      nodeResolve(),
     ],
   },
   {
