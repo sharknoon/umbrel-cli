@@ -72,7 +72,7 @@ export interface LintUmbrelAppYmlOptions {
 
 export async function lintUmbrelAppYml(
   content: string,
-  options: LintUmbrelAppYmlOptions
+  options: LintUmbrelAppYmlOptions = {}
 ): Promise<LintingResult[]> {
   // check if the file is valid yaml
   let rawUmbrelAppYml;
