@@ -18,11 +18,18 @@ export default async function umbrelAppYmlSchema() {
       disabled: z.boolean().optional(),
       // enforce kebab case
       name: z.string().min(1).max(50),
-      tagline: z.string().min(1).max(100).refine(async (tagline) =>
-        // Check if the taglines do not end with a period (except for those with multiple periods in it)
-        !(tagline.endsWith(".") && tagline.split(".").length === 2), {
-        message: "Taglines should not end with a period"
-      }),
+      tagline: z
+        .string()
+        .min(1)
+        .max(100)
+        .refine(
+          async (tagline) =>
+            // Check if the taglines do not end with a period (except for those with multiple periods in it)
+            !(tagline.endsWith(".") && tagline.split(".").length === 2),
+          {
+            message: "Taglines should not end with a period",
+          }
+        ),
       icon: z.string().optional(),
       category: z.enum([
         "files",
@@ -38,9 +45,19 @@ export default async function umbrelAppYmlSchema() {
       version: z.string().min(1),
       port: z.number().min(0).max(65535),
       description: z.string().min(1).max(5000),
-      developer: z.coerce.string().min(1).max(50),
+      developer: z.preprocess((val) => {
+        if (val === undefined || val === null) {
+          return val;
+        }
+        return String(val);
+      }, z.string().min(1).max(50)),
       website: z.string().url(),
-      submitter: z.coerce.string().min(1).max(50),
+      submitter: z.preprocess((val) => {
+        if (val === undefined || val === null) {
+          return val;
+        }
+        return String(val);
+      }, z.string().min(1).max(50)),
       submission: z.string().url(),
       repo: z.string().url().or(z.literal("")),
       support: z.string().url(),
