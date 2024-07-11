@@ -47,6 +47,7 @@ export async function test(
     await exit();
     return;
   }
+  host = host || "umbrel.local";
   port = port || 22;
   username = username || "umbrel";
   const sftp = new Client();
@@ -101,11 +102,38 @@ export async function test(
   const environment = result.environment;
 
   if (environment === "prod") {
-    log.info(
-      pc.blue(
-        `ℹ️ Connecting to ${pc.bold(`${host}:${port}`)} as ${pc.bold(username)}`,
-      ),
-    );
+    const enteredHost = await text({
+      message: "Please enter the hostname of your Umbrel:",
+      initialValue: host,
+    });
+    if (isCancel(enteredHost)) {
+      cancel(MESSAGE_ABORTED);
+      await exit();
+      return;
+    }
+    host = enteredHost;
+
+    const enteredPort = await text({
+      message: "Please enter the port of your Umbrel:",
+      initialValue: String(port),
+    });
+    if (isCancel(enteredPort)) {
+      cancel(MESSAGE_ABORTED);
+      await exit();
+      return;
+    }
+    port = Number(enteredPort);
+
+    const enteredUsername = await text({
+      message: "Please enter the username for your Umbrel:",
+      initialValue: username,
+    });
+    if (isCancel(enteredUsername)) {
+      cancel(MESSAGE_ABORTED);
+      await exit();
+      return;
+    }
+    username = enteredUsername;
 
     if (!password) {
       const enteredPassword = await passwordPrompt({
@@ -268,7 +296,6 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
       return;
     } else if (vms.length === 1) {
       vm = vms[0];
-      host = `${vm}.local`;
       log.info(pc.blue(`ℹ️ Using Multipass VM ${pc.bold(vm)}`));
     } else {
       const selection = await select({
@@ -283,6 +310,7 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
       }
       vm = selection;
     }
+    host = `${vm}.local`;
 
     // Check if the app already exists on the umbrel and ask if the user wants to override it
     let appAlreadyExists;
