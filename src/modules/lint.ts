@@ -19,7 +19,8 @@ export interface LintingResult {
     | "invalid_docker_image_name"
     | "invalid_yaml_boolean_value"
     | "invalid_app_data_dir_volume_mount"
-    | "invalid_submission_field";
+    | "invalid_submission_field"
+    | "missing_file_or_directory";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -128,7 +129,9 @@ export async function lintUmbrelAppYml(
 }
 
 export async function lintDockerComposeYml(
-  content: string
+  content: string,
+  files: string[],
+  id: string
 ): Promise<LintingResult[]> {
   // Mock the variables
   const rawDockerComposeYmlMocked = await mockVariables(content);
@@ -175,49 +178,6 @@ export async function lintDockerComposeYml(
         }) satisfies LintingResult
     );
   }
-
-  // Check if empty folders with .gitkeep exist for every volume
-  // This doesn't work properly (no easy way to detect, if a volume mount is a file or a directory)
-  /*
-    const dockerComposeYml: ComposeSpecification = YAML.parse(
-      rawDockerComposeYml,
-      { merge: true }
-    );
-    const hostVolumeMounts = Object.keys(dockerComposeYml.services ?? {}).flatMap(
-      (service) => dockerComposeYml.services?.[service].volumes ?? []
-    );
-    const appDataPaths = new Set<string>();
-    for (const volume of hostVolumeMounts) {
-      if (typeof volume !== "string") {
-        continue;
-      }
-      const volumeMatch = volume.match(/^\$\{?APP_DATA_DIR\}?(.+?):.*$/);
-      if (!volumeMatch || !volumeMatch[1]) {
-        continue;
-      }
-      let appDataPath = path.normalize(volumeMatch[1]);
-      //process.stdout.write(appDataPath);
-      // In case the path is a file, remove the last path segment
-      if (appDataPath.split(path.sep).pop()?.includes(".") ?? false) {
-        appDataPath = path.dirname(appDataPath);
-      }
-      // If there is no directory left, skip
-      if (appDataPath === path.sep || appDataPath === ".") {
-        continue;
-      }
-      //console.log(" => " + appDataPath)
-      appDataPath = path.join(id, appDataPath);
-      appDataPaths.add(appDataPath);
-    }
-    for (const appDataPath of appDataPaths) {
-      if (!(await exists(path.join(cwd, appDataPath, ".gitkeep")))) {
-        printLintingError(
-          `Missing directory ${pc.cyan(appDataPath)} with ${pc.cyan(".gitkeep")}`,
-          `To ensure that the directory have the right permissions, create the directory and add a .gitkeep file in it to keep it in the git repository`
-        );
-      }
-    }
-    */
 
   const result: LintingResult[] = [];
   const servicesMocked = Object.keys(dockerComposeYmlMocked.services ?? {});
@@ -341,7 +301,7 @@ export async function lintDockerComposeYml(
           "source" in volume &&
           "target" in volume
         ) {
-          if (volume.source.match(/\$\{?APP_DATA_DIR\}?\/?/)) {
+          if (volume.source.match(/\$\{?APP_DATA_DIR\}?\/?$/)) {
             result.push({
               id: "invalid_app_data_dir_volume_mount",
               propertiesPath: `services.${service}.volumes`,
@@ -350,6 +310,65 @@ export async function lintDockerComposeYml(
               title: `Volume "${volume.source}:${volume.target}"`,
               message: `Volumes should not be mounted directly into the "\${APP_DATA_DIR}" directory! Please use a subdirectory like "source: \${APP_DATA_DIR}/data" and "target: ${volume.target ?? "/some/dir"}" instead.`,
             });
+          }
+        }
+      }
+    }
+  }
+
+  // Check if all bind mounts, that are like this "${APP_DATA_DIR}/some/dir:/some/dir" are present
+  for (const service of services) {
+    const volumes = dockerComposeYml.services?.[service]?.volumes;
+    // if the volumes is an array
+    if (volumes && Array.isArray(volumes)) {
+      for (const volume of volumes) {
+        if (typeof volume === "string") {
+          if (volume.match(/\$\{?APP_DATA_DIR\}?/)) {
+            const match = volume.match(/\$\{?APP_DATA_DIR\}?\/?(.*?):/)?.[1];
+            if (!match) {
+              continue;
+            }
+            if (!files.includes(`${id}/${match}`)) {
+              result.push({
+                id: "missing_file_or_directory",
+                propertiesPath: `services.${service}.volumes`,
+                ...getSourceMapForKey(content, [
+                  "services",
+                  service,
+                  "volumes",
+                ]),
+                severity: "error",
+                title: `Missing file/directory "${id}/${match}"`,
+                message: `The volume "${volume}" tries to mount the file/directory "${id}/${match}", but it is not present! Please create that file/directory!`,
+              });
+            }
+          }
+        } else if (
+          typeof volume === "object" &&
+          "source" in volume &&
+          "target" in volume
+        ) {
+          if (volume.source.match(/\$\{?APP_DATA_DIR\}?/)) {
+            const match = volume.source.match(
+              /\$\{?APP_DATA_DIR\}?\/?(.*?)$/
+            )?.[1];
+            if (!match) {
+              continue;
+            }
+            if (!files.includes(`${id}/${match}`)) {
+              result.push({
+                id: "missing_file_or_directory",
+                propertiesPath: `services.${service}.volumes`,
+                ...getSourceMapForKey(content, [
+                  "services",
+                  service,
+                  "volumes",
+                ]),
+                severity: "error",
+                title: `Missing file/directory "${id}/${match}"`,
+                message: `The volume "${volume.source}:${volume.target}" tries to mount the file/directory "${id}/${match}", but it is not present! Please create that file/directory!`,
+              });
+            }
           }
         }
       }

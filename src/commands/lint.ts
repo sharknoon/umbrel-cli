@@ -4,7 +4,11 @@ import path from "node:path";
 import pc from "picocolors";
 import { getAllAppIds, getAppStoreType } from "../modules/appstore";
 import { getUmbrelAppYmls } from "../modules/apps";
-import { lintDockerComposeYml, lintUmbrelAppStoreYml, lintUmbrelAppYml } from "../modules/lint";
+import {
+  lintDockerComposeYml,
+  lintUmbrelAppStoreYml,
+  lintUmbrelAppYml,
+} from "../modules/lint";
 
 export async function lint(cwd: string): Promise<number> {
   let noLintingErrors = true;
@@ -40,12 +44,14 @@ async function umbrelAppStoreYml(cwd: string): Promise<boolean> {
     return false;
   }
 
-  const lintingResults = await lintUmbrelAppStoreYml(await fs.readFile(umbrelAppStoreYmlPath, "utf-8"));
+  const lintingResults = await lintUmbrelAppStoreYml(
+    await fs.readFile(umbrelAppStoreYmlPath, "utf-8")
+  );
   for (const result of lintingResults) {
-    printLintingError(result.title, result.message, result.severity)
+    printLintingError(result.title, result.message, result.severity);
   }
 
-  return lintingResults.filter(r => r.severity === "error").length === 0;
+  return lintingResults.filter((r) => r.severity === "error").length === 0;
 }
 
 async function readmeMd(cwd: string): Promise<boolean> {
@@ -74,12 +80,14 @@ async function umbrelAppYml(cwd: string, id: string): Promise<boolean> {
     return false;
   }
 
-  const lintingResults = await lintUmbrelAppYml(await fs.readFile(umbrelAppYmlPath, "utf-8"));
+  const lintingResults = await lintUmbrelAppYml(
+    await fs.readFile(umbrelAppYmlPath, "utf-8")
+  );
   for (const result of lintingResults) {
-    printLintingError(result.title, result.message, result.severity)
+    printLintingError(result.title, result.message, result.severity);
   }
 
-  return lintingResults.filter(r => r.severity === "error").length === 0;
+  return lintingResults.filter((r) => r.severity === "error").length === 0;
 }
 
 async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
@@ -123,12 +131,24 @@ async function dockerComposeYml(cwd: string, id: string): Promise<boolean> {
     return false;
   }
 
-  const lintingResults = await lintDockerComposeYml(await fs.readFile(dockerComposeYmlPath, "utf-8"));
+  // Get a list of all files and directories in the app directory
+  const rawFileList = await fs.readdir(path.resolve(cwd, id), {
+    recursive: true,
+  });
+  const fileList = rawFileList.map((f) =>
+    [id, ...f.split(path.sep)].join(path.posix.sep)
+  );
+
+  const lintingResults = await lintDockerComposeYml(
+    await fs.readFile(dockerComposeYmlPath, "utf-8"),
+    fileList,
+    id
+  );
   for (const result of lintingResults) {
-    printLintingError(result.title, result.message, result.severity)
+    printLintingError(result.title, result.message, result.severity);
   }
 
-  return lintingResults.filter(r => r.severity === "error").length === 0;
+  return lintingResults.filter((r) => r.severity === "error").length === 0;
 }
 
 function printLintingError(
@@ -145,7 +165,7 @@ function printLintingError(
       level = pc.bgYellow(pc.bold(" WARNING "));
       break;
     case "info":
-      level = pc.bgBlue(pc.bold(" INFO "))
+      level = pc.bgBlue(pc.bold(" INFO "));
       break;
   }
   console.log(`${level} ${pc.bold(title)}: ${pc.italic(pc.gray(message))}`);
