@@ -20,7 +20,8 @@ export interface LintingResult {
     | "invalid_yaml_boolean_value"
     | "invalid_app_data_dir_volume_mount"
     | "invalid_submission_field"
-    | "missing_file_or_directory";
+    | "missing_file_or_directory"
+    | "empty_app_data_directory";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -343,8 +344,8 @@ export async function lintDockerComposeYml(
                   "volumes",
                 ]),
                 severity: "error",
-                title: `Missing file/directory "${id}/${match}"`,
-                message: `The volume "${volume}" tries to mount the file/directory "${id}/${match}", but it is not present! Please create that file/directory!`,
+                title: `Missing file/directory "/${id}/${match}"`,
+                message: `The volume "${volume}" tries to mount the file/directory "/${id}/${match}", but it is not present! Please create that file/directory!`,
               });
             }
           }
@@ -370,8 +371,8 @@ export async function lintDockerComposeYml(
                   "volumes",
                 ]),
                 severity: "error",
-                title: `Missing file/directory "${id}/${match}"`,
-                message: `The volume "${volume.source}:${volume.target}" tries to mount the file/directory "${id}/${match}", but it is not present! Please create that file/directory!`,
+                title: `Missing file/directory "/${id}/${match}"`,
+                message: `The volume "${volume.source}:${volume.target}" tries to mount the file/directory "/${id}/${match}", but it is not present! Please create that file/directory!`,
               });
             }
           }
@@ -380,5 +381,27 @@ export async function lintDockerComposeYml(
     }
   }
 
+  return result;
+}
+
+export function lintDirectoryStructure(files: Entry[]): LintingResult[] {
+  // Check if there is an empty directory (no .gitkeep file)
+  const emptyDirectories = files
+    .filter((f) => f.type === "directory")
+    .filter(
+      (f) =>
+        !files.some(
+          (f2) => f2.path.length > f.path.length && f2.path.startsWith(f.path)
+        )
+    );
+  const result: LintingResult[] = [];
+  for (const directory of emptyDirectories) {
+    result.push({
+      id: "empty_app_data_directory",
+      severity: "error",
+      title: `Empty directory "${directory.path}"`,
+      message: `Please add a ".gitkeep" file to the directory "${directory.path}". This is necessary to ensure the correct permissions of the directory after cloning!`,
+    });
+  }
   return result;
 }

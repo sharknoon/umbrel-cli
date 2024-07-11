@@ -1,10 +1,12 @@
 import fs from "node:fs/promises";
-import { exists } from "../utils/fs";
+import { exists, readDirRecursive } from "../utils/fs";
 import path from "node:path";
 import pc from "picocolors";
 import { getAllAppIds, getAppStoreType } from "../modules/appstore";
 import { getUmbrelAppYmls } from "../modules/apps";
 import {
+  Entry,
+  lintDirectoryStructure as directoryStructure,
   lintDockerComposeYml,
   lintUmbrelAppStoreYml,
   lintUmbrelAppYml,
@@ -15,8 +17,12 @@ export async function lint(cwd: string): Promise<number> {
   noLintingErrors = (await umbrelAppStoreYml(cwd)) && noLintingErrors;
   noLintingErrors = (await readmeMd(cwd)) && noLintingErrors;
   for (const id of await getAllAppIds(cwd)) {
+    const files = await readDirRecursive(path.resolve(cwd, id));
+    files.forEach((file) => (file.path = `${id}/${file.path}`));
     noLintingErrors = (await umbrelAppYml(cwd, id)) && noLintingErrors;
-    noLintingErrors = (await dockerComposeYml(cwd, id)) && noLintingErrors;
+    noLintingErrors =
+      (await dockerComposeYml(cwd, id, files)) && noLintingErrors;
+    noLintingErrors = lintDirectoryStructure(files) && noLintingErrors;
   }
   noLintingErrors =
     (await lintUmbrelAppYmlDuplications(cwd)) && noLintingErrors;
@@ -118,7 +124,19 @@ async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
   return noLintingErrors;
 }
 
-async function dockerComposeYml(cwd: string, id: string): Promise<boolean> {
+function lintDirectoryStructure(files: Entry[]): boolean {
+  const lintingResults = directoryStructure(files);
+  for (const result of lintingResults) {
+    printLintingError(result.title, result.message, result.severity);
+  }
+  return lintingResults.filter((r) => r.severity === "error").length === 0;
+}
+
+async function dockerComposeYml(
+  cwd: string,
+  id: string,
+  files: Entry[]
+): Promise<boolean> {
   console.log(`Checking ${path.join(id, "docker-compose.yml")}`);
 
   const dockerComposeYmlPath = path.resolve(cwd, id, "docker-compose.yml");
@@ -131,24 +149,9 @@ async function dockerComposeYml(cwd: string, id: string): Promise<boolean> {
     return false;
   }
 
-  // Get a list of all files and directories in the app directory
-  const rawFileList = await fs.readdir(path.resolve(cwd, id), {
-    recursive: true,
-    withFileTypes: true,
-  });
-  const fileList = rawFileList
-    .filter((f) => f.isDirectory() || f.isFile())
-    .map((f) => ({
-      path: path
-        .relative(cwd, path.resolve(f.parentPath, f.name))
-        .split(path.sep)
-        .join(path.posix.sep),
-      type: (f.isDirectory() ? "directory" : "file") as "file" | "directory",
-    }));
-
   const lintingResults = await lintDockerComposeYml(
     await fs.readFile(dockerComposeYmlPath, "utf-8"),
-    fileList,
+    files,
     id
   );
   for (const result of lintingResults) {
