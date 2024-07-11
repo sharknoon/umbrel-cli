@@ -99,9 +99,10 @@ export async function lintUmbrelAppYml(
 
   // zod parse the file
   const schema = await umbrelAppYmlSchema();
-  const result = await schema.safeParseAsync(rawUmbrelAppYml);
-  if (!result.success) {
-    return result.error.issues.map(
+  const parsedUmbrelAppYml = await schema.safeParseAsync(rawUmbrelAppYml);
+  let result: LintingResult[] = [];
+  if (!parsedUmbrelAppYml.success) {
+    result = parsedUmbrelAppYml.error.issues.map(
       (issue) =>
         ({
           id: issue.code,
@@ -114,27 +115,24 @@ export async function lintUmbrelAppYml(
         }) satisfies LintingResult,
     );
   }
-  const umbrelAppYml = result.data;
 
   // If this is being called by another program in library mode (like a GitHub Action)
   // and this is a new app submission, check if the submission field corresponds to the pull request URL
   if (
     options.isNewAppSubmission &&
     options.pullRequestUrl &&
-    umbrelAppYml.submission !== options.pullRequestUrl
+    rawUmbrelAppYml.submission !== options.pullRequestUrl
   ) {
-    return [
-      {
-        id: "invalid_submission_field",
-        severity: "error",
-        title: `Invalid submission field "${umbrelAppYml.submission}"`,
-        message: `The submission field must be set to the URL of this pull request: ${options.pullRequestUrl}`,
-        file: `${id}/umbrel-app.yml`,
-      },
-    ];
+    result.push({
+      id: "invalid_submission_field",
+      severity: "error",
+      title: `Invalid submission field "${rawUmbrelAppYml.submission}"`,
+      message: `The submission field must be set to the URL of this pull request: ${options.pullRequestUrl}`,
+      file: `${id}/umbrel-app.yml`,
+    });
   }
 
-  return [];
+  return result;
 }
 
 export interface Entry {
