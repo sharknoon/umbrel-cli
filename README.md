@@ -39,12 +39,14 @@ This command scaffoldes a new app. It needs to be invoked from inside an App Sto
 
 ![umbrel app create](assets/app-create.svg?raw=true)
 
-### `umbrel lint`
+### `umbrel lint <name>`
 
 > [!NOTE]  
 > This command can only be executed inside an App Store directory!
 
 This command checkes your App Store and all Apps inside it for potential errors.
+
+If `<name>` is specified, the linter only lints the specified app. When left empty, all apps get linted.
 
 These files are being checked:
 
@@ -52,6 +54,7 @@ These files are being checked:
 - Existence of `README.me`
 - Validity of `<app>/umbrel-app.yml`
 - Validity of `<app>/docker-compose.yml`
+- Existence of `.gitkeep` files in empty directories
 - (WIP) Validity of `<app>/exports.sh`
 
 ![umbrel lint](assets/lint.svg?raw=true)

@@ -12,11 +12,33 @@ import {
   lintUmbrelAppYml,
 } from "../modules/lint";
 
-export async function lint(cwd: string): Promise<number> {
+let logLevel: "error" | "warning" | "info";
+
+export async function lint(
+  cwd: string,
+  appId?: string,
+  loglevel?: "error" | "warning" | "info",
+): Promise<number> {
+  if (appId && !(await exists(path.resolve(cwd, appId)))) {
+    console.log(pc.red(`App with id ${appId} does not exist`));
+    return 1;
+  }
+  // If all apps are being linted, omit the info messages
+  if (loglevel) {
+    logLevel = loglevel;
+  } else if (appId) {
+    logLevel = "info";
+  } else {
+    logLevel = "warning";
+  }
+  console.log(pc.blue(`Using log level ${logLevel}`));
   let noLintingErrors = true;
-  noLintingErrors = (await umbrelAppStoreYml(cwd)) && noLintingErrors;
-  noLintingErrors = (await readmeMd(cwd)) && noLintingErrors;
-  for (const id of await getAllAppIds(cwd)) {
+  if (!appId) {
+    noLintingErrors = (await umbrelAppStoreYml(cwd)) && noLintingErrors;
+    noLintingErrors = (await readmeMd(cwd)) && noLintingErrors;
+  }
+  const appIds = appId ? [appId] : await getAllAppIds(cwd);
+  for (const id of appIds) {
     const files = await readDirRecursive(path.resolve(cwd, id));
     files.forEach((file) => (file.path = `${id}/${file.path}`));
     noLintingErrors = (await umbrelAppYml(cwd, id)) && noLintingErrors;
@@ -25,7 +47,7 @@ export async function lint(cwd: string): Promise<number> {
     noLintingErrors = lintDirectoryStructure(files) && noLintingErrors;
   }
   noLintingErrors =
-    (await lintUmbrelAppYmlDuplications(cwd)) && noLintingErrors;
+    (await lintUmbrelAppYmlDuplications(cwd, appId)) && noLintingErrors;
   console.log(
     noLintingErrors
       ? pc.green("No linting errors found 🎉")
@@ -97,7 +119,10 @@ async function umbrelAppYml(cwd: string, id: string): Promise<boolean> {
   return lintingResults.filter((r) => r.severity === "error").length === 0;
 }
 
-async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
+async function lintUmbrelAppYmlDuplications(
+  cwd: string,
+  appId?: string,
+): Promise<boolean> {
   let noLintingErrors = true;
   const appYmls = await getUmbrelAppYmls(cwd);
   // Check if a port is used by multiple apps
@@ -112,7 +137,10 @@ async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
     if (!("name" in appYml) || typeof appYml.name !== "string") {
       continue;
     }
-    if (ports.has(appYml.port)) {
+    if (!("id" in appYml) || typeof appYml.id !== "string") {
+      continue;
+    }
+    if (ports.has(appYml.port) && (!appId || appId === appYml.id)) {
       noLintingErrors = false;
       const existintAppName = ports.get(appYml.port);
       printLintingError(
@@ -178,6 +206,12 @@ function printLintingError(
     case "info":
       level = pc.bgBlue(pc.bold(" INFO "));
       break;
+  }
+  if (severity === "info" && logLevel !== "info") {
+    return;
+  }
+  if (severity === "warning" && logLevel === "error") {
+    return;
   }
   console.log(`${level} ${pc.bold(title)}: ${pc.italic(pc.gray(message))}`);
 }

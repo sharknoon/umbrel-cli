@@ -21,7 +21,8 @@ export interface LintingResult {
     | "invalid_app_data_dir_volume_mount"
     | "invalid_submission_field"
     | "missing_file_or_directory"
-    | "empty_app_data_directory";
+    | "empty_app_data_directory"
+    | "external_port_mapping";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -393,6 +394,38 @@ export async function lintDockerComposeYml(
               });
             }
           }
+        }
+      }
+    }
+  }
+
+  // Print an info message for all port mappings, informing the user, that this may be unnecessary
+  for (const service of services) {
+    const ports = dockerComposeYml.services?.[service].ports;
+    if (ports && Array.isArray(ports)) {
+      for (const port of ports) {
+        if (typeof port === "string" || typeof port === "number") {
+          result.push({
+            id: "external_port_mapping",
+            propertiesPath: `services.${service}.ports`,
+            ...getSourceMapForKey(content, ["services", service, "ports"]),
+            severity: "info",
+            title: `External port mapping "${port}"`,
+            message:
+              "Port mappings are only needed, if external clients need to access the service. If the app is only accessed from other apps/programs on the same host, please use the container name instead. If you want to expose an HTTP UI, you also don't need to expose the port.",
+            file: `${id}/docker-compose.yml`,
+          });
+        } else if (typeof port === "object" && "target" in port) {
+          result.push({
+            id: "external_port_mapping",
+            propertiesPath: `services.${service}.ports`,
+            ...getSourceMapForKey(content, ["services", service, "ports"]),
+            severity: "info",
+            title: `External port mapping "${port.target}${port.published ? `:${port.published}` : ""}`,
+            message:
+              "Port mappings are only needed, if external clients need to access the service. If the app is only accessed from other apps/programs on the same host, please use the container name instead. If you want to expose an HTTP UI, you also don't need to expose the port.",
+            file: `${id}/docker-compose.yml`,
+          });
         }
       }
     }

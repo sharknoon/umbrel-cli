@@ -60,13 +60,28 @@ export async function main(args: string[]) {
       },
     )
     .command(
-      "lint",
+      "lint [id]",
       "Lints the current Umbrel App Store and all apps in it",
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      () => {},
+      (yargs) => {
+        yargs.positional("id", {
+          type: "string",
+          describe: "The id of the app to be linted",
+          default: "",
+        });
+        yargs.option("loglevel", {
+          alias: "l",
+          describe:
+            "Weather to print errors, errors + warnings or errors + warnings + infos",
+          choices: ["error", "warning", "info"],
+        });
+      },
       async (argv) => {
         await requireAppStoreDirectory(argv.w);
-        const result = await lint(argv.w);
+        const result = await lint(
+          argv.w,
+          argv.id as string | undefined,
+          argv.loglevel as "error" | "warning" | "info" | undefined,
+        );
         await exit(result);
       },
     )
