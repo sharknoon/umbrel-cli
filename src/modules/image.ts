@@ -38,8 +38,11 @@ export class Image {
       return new Image({ host: undefined, path, tag, digest });
     }
 
-    // The image can be either "/org/some/image/name:tag" or "host/org/some/image/name:tag"
     // Check if the first segment is a registry host
+    // The image can be either "org/image:tag" or "host/image:tag"
+    // E.g. "library/nginx:latest" or "docker.io/nginx:latest"
+    // Looging for a "." in the first segment can't be used to determine if the first segment is a host,
+    // because any hostname is valid, for example "localhost"
     let host = undefined;
     if (await Image.#isRegistry(pathSegments[0])) {
       host = pathSegments[0];
@@ -58,7 +61,7 @@ export class Image {
 
     // skip the check if the cache hits
     const hit = this.#registryCache.get(host);
-    if (hit) {
+    if (typeof hit === "boolean") {
       return hit;
     }
     // call /v2/ and check if it returns a 200 status code
@@ -69,7 +72,7 @@ export class Image {
         signal: controller.signal,
       });
       return (
-        result.headers.get("docker-distribution-api-version") === "registry/2.0"
+        result.headers.get("Docker-Distribution-Api-Version") === "registry/2.0"
       );
     } catch (error) {
       this.#registryCache.set(host, false);
