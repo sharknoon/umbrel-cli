@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import YAML from "yaml";
 import { cancel, intro, isCancel, text } from "@clack/prompts";
 import pc from "picocolors";
-import { getAppIds } from "../modules/appstore";
+import { getAllAppIds } from "../modules/appstore";
 import { MESSAGE_ABORTED } from "../modules/console";
 import { exit } from "../modules/process";
 import { exists } from "../utils/fs";
@@ -14,7 +14,7 @@ export async function update(cwd: string, id?: string) {
   console.clear();
   intro(`${pc.bgBlue(pc.white(" Update an Umbrel App "))}`);
 
-  const appIds = await getAppIds(cwd);
+  const appIds = await getAllAppIds(cwd);
 
   if (id) {
     if (!appIds.includes(id)) {
@@ -72,48 +72,4 @@ export async function update(cwd: string, id?: string) {
   }
 
   console.log(JSON.stringify(images));
-
-  /* const { appId, needsExportSh } = await group(
-    {
-      appId: () =>
-        text({
-          message: `Please choose an id for your app. It should be unique and contain only alphabets (a-z) and dashes (-). ${
-            appStoreType === "community"
-              ? `The id needs to be prefixed with '${appStoreId}-'.`
-              : ""
-          }`,
-          placeholder: defaultId,
-          initialValue: defaultId,
-          validate: (value) => {
-            if (!value) return "Please enter an id.";
-            if (!/^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$/.test(value))
-              return "Please enter a valid id.";
-            if (takenAppIds.includes(value)) return "This id is already taken.";
-            if (value.startsWith("umbrel-app-store"))
-              return "Please choose a different id. This id is reserved for the official Umbrel App Store.";
-            if (
-              appStoreType === "community" &&
-              !value.startsWith(`${appStoreId}-`)
-            )
-              return `The id needs to be prefixed with '${appStoreId}-'.`;
-            if (value.length > 50) return "The id is too long.";
-            return undefined;
-          },
-        }),
-      needsExportSh: () =>
-        confirm({
-          message:
-            "Does your app need to share environment variables with other apps? This is useful, for example, if another app needs to access an API provided by your app.",
-          initialValue: false,
-        }),
-    },
-    {
-      // On Cancel callback that wraps the group
-      // So if the user cancels one of the prompts in the group this function will be called
-      onCancel: async () => {
-        cancel(MESSAGE_ABORTED);
-        await exit();
-      },
-    }
-  ); */
 }
