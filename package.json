@@ -1,6 +1,6 @@
 {
   "name": "umbrel-cli",
-  "version": "0.1.0-beta.2",
+  "version": "0.4.6",
   "description": "A small cli tool to help you create and maintain your umbrel apps",
   "type": "module",
   "main": "./dist/cli.js",
@@ -17,8 +17,8 @@
     "test": "vitest run",
     "lint": "prettier . --check && eslint .",
     "format": "prettier . --write",
-    "schema": "json2ts \"src/schemas/*.json\" src/schemas",
     "prepublishOnly": "npm run build",
+    "schema": "json2ts \"src/schemas/*.json\" src/schemas",
     "prepare": "npm run schema"
   },
   "repository": {
@@ -44,13 +44,16 @@
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/node": "^20.12.8",
     "@types/semver": "^7.5.8",
+    "@types/ssh2-sftp-client": "^9.0.3",
     "@types/yargs": "^17.0.32",
     "eslint": "^8.57.0",
     "globals": "^15.3.0",
     "json-schema-to-typescript": "^14.0.4",
-    "prettier": "^3.3.1",
+    "prettier": "^3.3.2",
     "rollup": "^4.18.0",
     "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-delete": "^2.0.0",
+    "rollup-plugin-dts": "^6.1.1",
     "tslib": "^2.6.2",
     "typescript": "^5.4.5",
     "typescript-eslint": "^7.8.0",
@@ -63,8 +66,11 @@
     "handlebars": "^4.7.8",
     "isomorphic-git": "^1.25.8",
     "latest-version": "^9.0.0",
+    "open": "^10.1.0",
     "semver": "^7.6.2",
-    "yaml": "^2.4.2",
+    "ssh2": "^1.15.0",
+    "ssh2-sftp-client": "^10.0.3",
+    "yaml": "^2.4.5",
     "yargs": "^17.7.2",
     "zod": "^3.23.6"
   }

@@ -24,7 +24,6 @@ import { MESSAGE_ABORTED } from "../../modules/console";
 import { exit } from "../../modules/process";
 
 export async function create(cwd: string, id?: string) {
-  console.clear();
   intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App Store "))}`);
   if (await isAppStoreDirectory(cwd)) {
     note(
@@ -81,6 +80,7 @@ export async function create(cwd: string, id?: string) {
   if (isCancel(result)) {
     cancel(MESSAGE_ABORTED);
     await exit();
+    return;
   }
   const appStoreType = result as "official" | "community";
 
@@ -138,6 +138,7 @@ async function createCommunityAppStore(dir: string) {
       onCancel: async () => {
         cancel(MESSAGE_ABORTED);
         await exit();
+        return;
       },
     },
   );
@@ -151,7 +152,12 @@ async function createCommunityAppStore(dir: string) {
   // umbrel-app-store.yml
   const umbrelAppStoreTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(__dirname, "templates", "umbrel-app-store.yml.handlebars"),
+      path.resolve(
+        __dirname,
+        "templates",
+        "appstore",
+        "umbrel-app-store.yml.handlebars",
+      ),
       "utf-8",
     ),
   );
@@ -165,7 +171,7 @@ async function createCommunityAppStore(dir: string) {
   // .gitignore
   const gitignoreTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(__dirname, "templates", "gitignore.handlebars"),
+      path.resolve(__dirname, "templates", "appstore", "gitignore.handlebars"),
       "utf-8",
     ),
   );
@@ -175,7 +181,7 @@ async function createCommunityAppStore(dir: string) {
   // README.md
   const readmeTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(__dirname, "templates", "README.md.handlebars"),
+      path.resolve(__dirname, "templates", "appstore", "README.md.handlebars"),
       "utf-8",
     ),
   );

@@ -21,3 +21,7 @@ export async function setup() {
   });
   await fs.mkdir("tests/empty-directory", { recursive: true });
 }
+
+export async function teardown() {
+  await fs.rm("tests", { recursive: true });
+}

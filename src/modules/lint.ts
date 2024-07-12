@@ -1,0 +1,456 @@
+import path from "node:path";
+import YAML from "yaml";
+import umbrelAppStoreYmlSchema from "../schemas/umbrel-app-store.yml.schema";
+import { mockVariables } from "./mock";
+import { ComposeSpecification } from "../schemas/docker-compose.yml.schema";
+import Ajv from "ajv";
+import { DefinedError } from "ajv";
+import addFormats from "ajv-formats";
+import dockerComposeYmlSchema from "../schemas/docker-compose.yml.schema.json";
+import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
+import { ZodIssueCode } from "zod";
+import { getSourceMapForKey } from "../utils/yaml";
+
+export interface LintingResult {
+  id:
+    | ZodIssueCode
+    | DefinedError["keyword"]
+    | "invalid_yaml_syntax"
+    | "invalid_docker_image_name"
+    | "invalid_yaml_boolean_value"
+    | "invalid_app_data_dir_volume_mount"
+    | "invalid_submission_field"
+    | "missing_file_or_directory"
+    | "empty_app_data_directory"
+    | "external_port_mapping";
+  propertiesPath?: string;
+  line?: { start: number; end: number }; // Starting at 1
+  column?: { start: number; end: number }; // Starting at 1
+  severity: "error" | "warning" | "info";
+  title: string;
+  message: string;
+  file: string;
+}
+
+export async function lintUmbrelAppStoreYml(
+  content: string,
+): Promise<LintingResult[]> {
+  // check if the file is valid yaml
+  let umbrelAppStoreYml;
+  try {
+    umbrelAppStoreYml = YAML.parse(content);
+  } catch (e) {
+    return [
+      {
+        id: "invalid_yaml_syntax",
+        severity: "error",
+        title: "umbrel-app-store.yml is not a valid YAML file",
+        message: String(e),
+        file: "umbrel-app-store.yml",
+      },
+    ];
+  }
+
+  // zod parse the file
+  const schema = await umbrelAppStoreYmlSchema();
+  const result = await schema.safeParseAsync(umbrelAppStoreYml);
+  if (!result.success) {
+    return result.error.issues.map(
+      (issue) =>
+        ({
+          id: issue.code,
+          propertiesPath: issue.path.join("."),
+          ...getSourceMapForKey(content, issue.path),
+          severity: "error",
+          title: issue.path.join("."),
+          message: issue.message,
+          file: "umbrel-app-store.yml",
+        }) satisfies LintingResult,
+    );
+  }
+  return [];
+}
+
+export interface LintUmbrelAppYmlOptions {
+  isNewAppSubmission?: boolean;
+  pullRequestUrl?: string;
+}
+
+export async function lintUmbrelAppYml(
+  content: string,
+  id: string,
+  options: LintUmbrelAppYmlOptions = {},
+): Promise<LintingResult[]> {
+  // check if the file is valid yaml
+  let rawUmbrelAppYml;
+  try {
+    rawUmbrelAppYml = YAML.parse(content);
+  } catch (e) {
+    return [
+      {
+        id: "invalid_yaml_syntax",
+        severity: "error",
+        title: "umbrel-app.yml is not a valid YAML file",
+        message: String(e),
+        file: `${id}/umbrel-app.yml`,
+      },
+    ];
+  }
+
+  // zod parse the file
+  const schema = await umbrelAppYmlSchema();
+  const parsedUmbrelAppYml = await schema.safeParseAsync(rawUmbrelAppYml);
+  let result: LintingResult[] = [];
+  if (!parsedUmbrelAppYml.success) {
+    result = parsedUmbrelAppYml.error.issues.map(
+      (issue) =>
+        ({
+          id: issue.code,
+          propertiesPath: issue.path.join("."),
+          ...getSourceMapForKey(content, issue.path),
+          severity: "error",
+          title: issue.path.join("."),
+          message: issue.message,
+          file: `${id}/umbrel-app.yml`,
+        }) satisfies LintingResult,
+    );
+  }
+
+  // If this is being called by another program in library mode (like a GitHub Action)
+  // and this is a new app submission, check if the submission field corresponds to the pull request URL
+  if (
+    options.isNewAppSubmission &&
+    options.pullRequestUrl &&
+    rawUmbrelAppYml.submission !== options.pullRequestUrl
+  ) {
+    result.push({
+      id: "invalid_submission_field",
+      severity: "error",
+      title: `Invalid submission field "${rawUmbrelAppYml.submission}"`,
+      message: `The submission field must be set to the URL of this pull request: ${options.pullRequestUrl}`,
+      file: `${id}/umbrel-app.yml`,
+    });
+  }
+
+  return result;
+}
+
+export interface Entry {
+  path: string;
+  type: "file" | "directory";
+}
+
+export async function lintDockerComposeYml(
+  content: string,
+  id: string,
+  files: Entry[],
+): Promise<LintingResult[]> {
+  // Mock the variables
+  const rawDockerComposeYmlMocked = await mockVariables(content);
+
+  // check if the file is valid yaml
+  let dockerComposeYmlMocked: ComposeSpecification;
+  try {
+    dockerComposeYmlMocked = YAML.parse(rawDockerComposeYmlMocked, {
+      merge: true,
+    });
+  } catch (e) {
+    return [
+      {
+        id: "invalid_yaml_syntax",
+        severity: "error",
+        title: "docker-compose.yml is not a valid YAML file",
+        message: String(e),
+        file: `${id}/docker-compose.yml`,
+      },
+    ];
+  }
+
+  // Check if the file is a valid docker compose file
+  const ajv = new Ajv({ allowUnionTypes: true });
+  addFormats(ajv);
+  const validate = ajv.compile<ComposeSpecification>(dockerComposeYmlSchema);
+  const validAppYaml = validate(dockerComposeYmlMocked);
+  if (!validAppYaml) {
+    return ((validate.errors as DefinedError[]) ?? []).map(
+      (error) =>
+        ({
+          id: error.keyword,
+          propertiesPath: path
+            .normalize(error.instancePath)
+            .split(path.sep)
+            .filter(Boolean)
+            .join("."),
+          ...getSourceMapForKey(
+            content,
+            path.normalize(error.instancePath).split(path.sep).filter(Boolean),
+          ),
+          severity: "error",
+          title: error.instancePath,
+          message: error.message ?? "Unknown error",
+          file: `${id}/docker-compose.yml`,
+        }) satisfies LintingResult,
+    );
+  }
+
+  const result: LintingResult[] = [];
+  const servicesMocked = Object.keys(dockerComposeYmlMocked.services ?? {});
+
+  // Check if the image follows the naming convention
+  for (const service of servicesMocked) {
+    const image = dockerComposeYmlMocked.services?.[service].image;
+    if (!image) {
+      continue;
+    }
+    const imageMatch = image.match(/^(.+):(.+)@(.+)$/);
+    if (!imageMatch) {
+      result.push({
+        id: "invalid_docker_image_name",
+        propertiesPath: `services.${service}.image`,
+        ...getSourceMapForKey(content, ["services", service, "image"]),
+        severity: "error",
+        title: `Invalid image name "${image}"`,
+        message: `Images should be named like "<name>:<version-tag>@<sha256>"`,
+        file: `${id}/docker-compose.yml`,
+      });
+    } else {
+      const [, version] = imageMatch.slice(1);
+      if (version === "latest") {
+        result.push({
+          id: "invalid_docker_image_name",
+          propertiesPath: `services.${service}.image`,
+          ...getSourceMapForKey(content, ["services", service, "image"]),
+          severity: "warning",
+          title: `Invalid image tag "${version}"`,
+          message: `Images should not use the "latest" tag`,
+          file: `${id}/docker-compose.yml`,
+        });
+      }
+    }
+  }
+
+  // Check if the keys "environment", "labels", and "extra_hosts" contains bare booleans (true instead of "true")
+  // Note this is only an issue in Docker Compose V1. As soon as umbrelOS 0.5 is no longer supported, this check
+  // is unnecessary as umbrelOS >= 1 uses Docker Compose V2 which allows bare boolean values
+  for (const service of servicesMocked) {
+    const environment = dockerComposeYmlMocked.services?.[service].environment;
+    const labels = dockerComposeYmlMocked.services?.[service].labels;
+    const extra_hosts = dockerComposeYmlMocked.services?.[service].extra_hosts;
+    const properties = [];
+    // Nothing to do if it is an string array
+    if (environment && typeof environment === "object") {
+      properties.push({
+        label: "environment",
+        entries: Object.entries(environment),
+      });
+    }
+    if (labels && typeof labels === "object") {
+      properties.push({ label: "labels", entries: Object.entries(labels) });
+    }
+    if (extra_hosts && typeof extra_hosts === "object") {
+      properties.push({
+        label: "extra_hosts",
+        entries: Object.entries(extra_hosts),
+      });
+    }
+
+    for (const property of properties) {
+      for (const [key, value] of property.entries) {
+        if (typeof value === "boolean") {
+          result.push({
+            id: "invalid_yaml_boolean_value",
+            propertiesPath: `services.${service}.${property.label}.${key}`,
+            ...getSourceMapForKey(content, [
+              "services",
+              service,
+              property.label,
+              key,
+            ]),
+            severity: "error",
+            title: `Invalid YAML boolean value for key "${key}"`,
+            message: `Boolean values thould be strings like "${value}" instead of ${value}`,
+            file: `${id}/docker-compose.yml`,
+          });
+        }
+      }
+    }
+  }
+
+  // Check if this app puts data directly into the ${APP_DATA_DIR} directory
+  // If so, print a warning, because this is not future proof. If the submitter wants to add something
+  // later, there is no clear distinction like when using directories.
+  let dockerComposeYml;
+  try {
+    dockerComposeYml = YAML.parse(content, {
+      merge: true,
+    });
+  } catch (e) {
+    // This should never happen, as we already parsed the file before
+    // But better be safe
+    return [
+      {
+        id: "invalid_yaml_syntax",
+        severity: "error",
+        title: "docker-compose.yml is not a valid YAML file",
+        message: String(e),
+        file: `${id}/docker-compose.yml`,
+      },
+    ];
+  }
+  const services = Object.keys(dockerComposeYml.services ?? {});
+  for (const service of services) {
+    const volumes = dockerComposeYml.services?.[service]?.volumes;
+    // if the volumes is an array
+    if (volumes && Array.isArray(volumes)) {
+      for (const volume of volumes) {
+        if (typeof volume === "string") {
+          if (volume.match(/\$\{?APP_DATA_DIR\}?\/?:/)) {
+            result.push({
+              id: "invalid_app_data_dir_volume_mount",
+              propertiesPath: `services.${service}.volumes`,
+              ...getSourceMapForKey(content, ["services", service, "volumes"]),
+              severity: "warning",
+              title: `Volume "${volume}"`,
+              message: `Volumes should not be mounted directly into the "\${APP_DATA_DIR}" directory! Please use a subdirectory like "\${APP_DATA_DIR}/data${volume.split(":")[1] ?? ""}" instead.`,
+              file: `${id}/docker-compose.yml`,
+            });
+          }
+        } else if (
+          typeof volume === "object" &&
+          "source" in volume &&
+          "target" in volume
+        ) {
+          if (volume.source.match(/\$\{?APP_DATA_DIR\}?\/?$/)) {
+            result.push({
+              id: "invalid_app_data_dir_volume_mount",
+              propertiesPath: `services.${service}.volumes`,
+              ...getSourceMapForKey(content, ["services", service, "volumes"]),
+              severity: "warning",
+              title: `Volume "${volume.source}:${volume.target}"`,
+              message: `Volumes should not be mounted directly into the "\${APP_DATA_DIR}" directory! Please use a subdirectory like "source: \${APP_DATA_DIR}/data" and "target: ${volume.target ?? "/some/dir"}" instead.`,
+              file: `${id}/docker-compose.yml`,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Check if all bind mounts, that are like this "${APP_DATA_DIR}/some/dir:/some/dir" are present
+  for (const service of services) {
+    const volumes = dockerComposeYml.services?.[service]?.volumes;
+    // if the volumes is an array
+    if (volumes && Array.isArray(volumes)) {
+      for (const volume of volumes) {
+        if (typeof volume === "string") {
+          if (volume.match(/\$\{?APP_DATA_DIR\}?/)) {
+            const match = volume.match(/\$\{?APP_DATA_DIR\}?\/?(.*?):/)?.[1];
+            if (!match) {
+              continue;
+            }
+            if (!files.map((f) => f.path).includes(`${id}/${match}`)) {
+              result.push({
+                id: "missing_file_or_directory",
+                propertiesPath: `services.${service}.volumes`,
+                ...getSourceMapForKey(content, [
+                  "services",
+                  service,
+                  "volumes",
+                ]),
+                severity: "error",
+                title: `Missing file/directory "/${id}/${match}"`,
+                message: `The volume "${volume}" tries to mount the file/directory "/${id}/${match}", but it is not present! Please create that file/directory!`,
+                file: `${id}/docker-compose.yml`,
+              });
+            }
+          }
+        } else if (
+          typeof volume === "object" &&
+          "source" in volume &&
+          "target" in volume
+        ) {
+          if (volume.source.match(/\$\{?APP_DATA_DIR\}?/)) {
+            const match = volume.source.match(
+              /\$\{?APP_DATA_DIR\}?\/?(.*?)$/,
+            )?.[1];
+            if (!match) {
+              continue;
+            }
+            if (!files.map((f) => f.path).includes(`${id}/${match}`)) {
+              result.push({
+                id: "missing_file_or_directory",
+                propertiesPath: `services.${service}.volumes`,
+                ...getSourceMapForKey(content, [
+                  "services",
+                  service,
+                  "volumes",
+                ]),
+                severity: "error",
+                title: `Missing file/directory "/${id}/${match}"`,
+                message: `The volume "${volume.source}:${volume.target}" tries to mount the file/directory "/${id}/${match}", but it is not present! Please create that file/directory!`,
+                file: `${id}/docker-compose.yml`,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Print an info message for all port mappings, informing the user, that this may be unnecessary
+  for (const service of services) {
+    const ports = dockerComposeYml.services?.[service].ports;
+    if (ports && Array.isArray(ports)) {
+      for (const port of ports) {
+        if (typeof port === "string" || typeof port === "number") {
+          result.push({
+            id: "external_port_mapping",
+            propertiesPath: `services.${service}.ports`,
+            ...getSourceMapForKey(content, ["services", service, "ports"]),
+            severity: "info",
+            title: `External port mapping "${port}"`,
+            message:
+              "Port mappings are only needed, if external clients need to access the service. If the app is only accessed from other apps/programs on the same host, please use the container name instead. If you want to expose an HTTP UI, you also don't need to expose the port.",
+            file: `${id}/docker-compose.yml`,
+          });
+        } else if (typeof port === "object" && "target" in port) {
+          result.push({
+            id: "external_port_mapping",
+            propertiesPath: `services.${service}.ports`,
+            ...getSourceMapForKey(content, ["services", service, "ports"]),
+            severity: "info",
+            title: `External port mapping "${port.target}${port.published ? `:${port.published}` : ""}`,
+            message:
+              "Port mappings are only needed, if external clients need to access the service. If the app is only accessed from other apps/programs on the same host, please use the container name instead. If you want to expose an HTTP UI, you also don't need to expose the port.",
+            file: `${id}/docker-compose.yml`,
+          });
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+export function lintDirectoryStructure(files: Entry[]): LintingResult[] {
+  // Check if there is an empty directory (no .gitkeep file)
+  const emptyDirectories = files
+    .filter((f) => f.type === "directory")
+    .filter(
+      (f) =>
+        !files.some(
+          (f2) => f2.path.length > f.path.length && f2.path.startsWith(f.path),
+        ),
+    );
+  const result: LintingResult[] = [];
+  for (const directory of emptyDirectories) {
+    result.push({
+      id: "empty_app_data_directory",
+      severity: "error",
+      title: `Empty directory "${directory.path}"`,
+      message: `Please add a ".gitkeep" file to the directory "${directory.path}". This is necessary to ensure the correct permissions of the directory after cloning!`,
+      file: directory.path,
+    });
+  }
+  return result;
+}

@@ -15,7 +15,7 @@ import Handlebars from "handlebars";
 import {
   getUmbrelAppStoreYml,
   getAppStoreType,
-  getAppIds,
+  getAllAppIds,
 } from "../../modules/appstore";
 import { __dirname } from "../../utils/fs";
 import { MESSAGE_ABORTED } from "../../modules/console";
@@ -30,7 +30,7 @@ export async function create(cwd: string, id?: string) {
   const appStoreId = (await getUmbrelAppStoreYml(cwd))?.id;
   log.info(`Using the App Store at ${cwd} to create a new app.`);
 
-  const takenAppIds = await getAppIds(cwd);
+  const takenAppIds = await getAllAppIds(cwd);
 
   let defaultId = id || "my-cool-app";
   if (appStoreType === "community") {
@@ -77,6 +77,7 @@ export async function create(cwd: string, id?: string) {
       onCancel: async () => {
         cancel(MESSAGE_ABORTED);
         await exit();
+        return;
       },
     },
   );
@@ -88,7 +89,7 @@ export async function create(cwd: string, id?: string) {
   // Create umbrel-app.yml
   const manifestTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(__dirname, "templates", "umbrel-app.yml.handlebars"),
+      path.resolve(__dirname, "templates", "app", "umbrel-app.yml.handlebars"),
       "utf-8",
     ),
   );
@@ -103,7 +104,12 @@ export async function create(cwd: string, id?: string) {
   // Create docker-compose.yml
   const dockerComposeTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(__dirname, "templates", "docker-compose.yml.handlebars"),
+      path.resolve(
+        __dirname,
+        "templates",
+        "app",
+        "docker-compose.yml.handlebars",
+      ),
       "utf-8",
     ),
   );
@@ -118,7 +124,7 @@ export async function create(cwd: string, id?: string) {
   if (needsExportSh) {
     const exportsTemplate = Handlebars.compile(
       await fs.readFile(
-        path.resolve(__dirname, "templates", "exports.sh.handlebars"),
+        path.resolve(__dirname, "templates", "app", "exports.sh.handlebars"),
         "utf-8",
       ),
     );

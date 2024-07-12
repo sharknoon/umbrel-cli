@@ -1,28 +1,53 @@
 import fs from "node:fs/promises";
-import YAML from "yaml";
-import { exists } from "../utils/fs";
-import umbrelAppStoreYmlSchema from "../schemas/umbrel-app-store.yml.schema";
+import { exists, readDirRecursive } from "../utils/fs";
 import path from "node:path";
 import pc from "picocolors";
-import Ajv from "ajv";
-import addFormats from "ajv-formats";
-import { getAppIds, getAppStoreType } from "../modules/appstore";
-import { getRawUmbrelAppYmls } from "../modules/apps";
-import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
-import dockerComposeYmlSchema from "../schemas/docker-compose.yml.schema.json";
-import { mockVariables } from "../modules/mock";
-import { ComposeSpecification } from "../schemas/docker-compose.yml.schema";
+import { getAllAppIds, getAppStoreType } from "../modules/appstore";
+import { getUmbrelAppYmls } from "../modules/apps";
+import {
+  Entry,
+  lintDirectoryStructure as directoryStructure,
+  lintDockerComposeYml,
+  lintUmbrelAppStoreYml,
+  lintUmbrelAppYml,
+} from "../modules/lint";
 
-export async function lint(cwd: string): Promise<number> {
+let logLevel: "error" | "warning" | "info";
+
+export async function lint(
+  cwd: string,
+  appId?: string,
+  loglevel?: "error" | "warning" | "info",
+): Promise<number> {
+  if (appId && !(await exists(path.resolve(cwd, appId)))) {
+    console.log(pc.red(`App with id ${appId} does not exist`));
+    return 1;
+  }
+  // If all apps are being linted, omit the info messages
+  if (loglevel) {
+    logLevel = loglevel;
+  } else if (appId) {
+    logLevel = "info";
+  } else {
+    logLevel = "warning";
+  }
+  console.log(pc.blue(`Using log level ${logLevel}`));
   let noLintingErrors = true;
-  noLintingErrors = (await lintUmbrelAppStoreYml(cwd)) && noLintingErrors;
-  noLintingErrors = (await lintReadmeMd(cwd)) && noLintingErrors;
-  for (const id of await getAppIds(cwd)) {
-    noLintingErrors = (await lintUmbrelAppYml(cwd, id)) && noLintingErrors;
-    noLintingErrors = (await lintDockerComposeYml(cwd, id)) && noLintingErrors;
+  if (!appId) {
+    noLintingErrors = (await umbrelAppStoreYml(cwd)) && noLintingErrors;
+    noLintingErrors = (await readmeMd(cwd)) && noLintingErrors;
+  }
+  const appIds = appId ? [appId] : await getAllAppIds(cwd);
+  for (const id of appIds) {
+    const files = await readDirRecursive(path.resolve(cwd, id));
+    files.forEach((file) => (file.path = `${id}/${file.path}`));
+    noLintingErrors = (await umbrelAppYml(cwd, id)) && noLintingErrors;
+    noLintingErrors =
+      (await dockerComposeYml(cwd, id, files)) && noLintingErrors;
+    noLintingErrors = lintDirectoryStructure(files) && noLintingErrors;
   }
   noLintingErrors =
-    (await lintUmbrelAppYmlDuplications(cwd)) && noLintingErrors;
+    (await lintUmbrelAppYmlDuplications(cwd, appId)) && noLintingErrors;
   console.log(
     noLintingErrors
       ? pc.green("No linting errors found 🎉")
@@ -31,7 +56,7 @@ export async function lint(cwd: string): Promise<number> {
   return noLintingErrors ? 0 : 1;
 }
 
-async function lintUmbrelAppStoreYml(cwd: string): Promise<boolean> {
+async function umbrelAppStoreYml(cwd: string): Promise<boolean> {
   if ((await getAppStoreType(cwd)) === "official") {
     return true;
   }
@@ -47,33 +72,17 @@ async function lintUmbrelAppStoreYml(cwd: string): Promise<boolean> {
     return false;
   }
 
-  // check if the file is valid yaml
-  let umbrelAppStoreYml;
-  try {
-    umbrelAppStoreYml = YAML.parse(
-      await fs.readFile(umbrelAppStoreYmlPath, "utf-8"),
-    );
-  } catch (e) {
-    printLintingError(
-      "umbrel-app-store.yml is not a valid YAML file",
-      String(e),
-    );
-    return false;
+  const lintingResults = await lintUmbrelAppStoreYml(
+    await fs.readFile(umbrelAppStoreYmlPath, "utf-8"),
+  );
+  for (const result of lintingResults) {
+    printLintingError(result.title, result.message, result.severity);
   }
 
-  // zod parse the file
-  const schema = await umbrelAppStoreYmlSchema(cwd);
-  const result = await schema.safeParseAsync(umbrelAppStoreYml);
-  if (!result.success) {
-    result.error.issues.forEach((issue) => {
-      printLintingError(issue.path.join("."), issue.message);
-    });
-    return false;
-  }
-  return true;
+  return lintingResults.filter((r) => r.severity === "error").length === 0;
 }
 
-async function lintReadmeMd(cwd: string): Promise<boolean> {
+async function readmeMd(cwd: string): Promise<boolean> {
   console.log("Checking README.md");
   const readmeMdPath = path.resolve(cwd, "README.md");
   if (!(await exists(readmeMdPath))) {
@@ -87,7 +96,7 @@ async function lintReadmeMd(cwd: string): Promise<boolean> {
   return true;
 }
 
-async function lintUmbrelAppYml(cwd: string, id: string): Promise<boolean> {
+async function umbrelAppYml(cwd: string, id: string): Promise<boolean> {
   console.log(`Checking ${path.join(id, "umbrel-app.yml")}`);
   const umbrelAppYmlPath = path.resolve(cwd, id, "umbrel-app.yml");
   // Check if the file exists
@@ -99,42 +108,23 @@ async function lintUmbrelAppYml(cwd: string, id: string): Promise<boolean> {
     return false;
   }
 
-  // check if the file is valid yaml
-  let umbrelAppYml;
-  try {
-    umbrelAppYml = YAML.parse(await fs.readFile(umbrelAppYmlPath, "utf-8"));
-  } catch (e) {
-    printLintingError("umbrel-app.yml is not a valid YAML file", String(e));
-    return false;
+  const lintingResults = await lintUmbrelAppYml(
+    await fs.readFile(umbrelAppYmlPath, "utf-8"),
+    id,
+  );
+  for (const result of lintingResults) {
+    printLintingError(result.title, result.message, result.severity);
   }
 
-  // zod parse the file
-  const schema = await umbrelAppYmlSchema(cwd);
-  const result = await schema.safeParseAsync(umbrelAppYml);
-  if (!result.success) {
-    result.error.issues.forEach((issue) => {
-      printLintingError(issue.path.join("."), issue.message);
-    });
-    return false;
-  }
-
-  // Check if the taglines do not end with a period (except for those with multiple periods in it)
-  if (
-    result.data.tagline.endsWith(".") &&
-    result.data.tagline.split(".").length === 2
-  ) {
-    printLintingError(
-      "Taglines should not end with a period",
-      result.data.tagline.split(".")[0] + pc.bold(pc.cyan(".")),
-    );
-    return false;
-  }
-  return true;
+  return lintingResults.filter((r) => r.severity === "error").length === 0;
 }
 
-async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
+async function lintUmbrelAppYmlDuplications(
+  cwd: string,
+  appId?: string,
+): Promise<boolean> {
   let noLintingErrors = true;
-  const appYmls = await getRawUmbrelAppYmls(cwd);
+  const appYmls = await getUmbrelAppYmls(cwd);
   // Check if a port is used by multiple apps
   const ports = new Map<number, string>();
   for (const appYml of appYmls) {
@@ -147,7 +137,10 @@ async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
     if (!("name" in appYml) || typeof appYml.name !== "string") {
       continue;
     }
-    if (ports.has(appYml.port)) {
+    if (!("id" in appYml) || typeof appYml.id !== "string") {
+      continue;
+    }
+    if (ports.has(appYml.port) && (!appId || appId === appYml.id)) {
       noLintingErrors = false;
       const existintAppName = ports.get(appYml.port);
       printLintingError(
@@ -160,10 +153,20 @@ async function lintUmbrelAppYmlDuplications(cwd: string): Promise<boolean> {
   return noLintingErrors;
 }
 
-async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
-  console.log(`Checking ${path.join(id, "docker-compose.yml")}`);
+function lintDirectoryStructure(files: Entry[]): boolean {
+  const lintingResults = directoryStructure(files);
+  for (const result of lintingResults) {
+    printLintingError(result.title, result.message, result.severity);
+  }
+  return lintingResults.filter((r) => r.severity === "error").length === 0;
+}
 
-  let result = true;
+async function dockerComposeYml(
+  cwd: string,
+  id: string,
+  files: Entry[],
+): Promise<boolean> {
+  console.log(`Checking ${path.join(id, "docker-compose.yml")}`);
 
   const dockerComposeYmlPath = path.resolve(cwd, id, "docker-compose.yml");
   // Check if the file exists
@@ -175,113 +178,40 @@ async function lintDockerComposeYml(cwd: string, id: string): Promise<boolean> {
     return false;
   }
 
-  // Read the file and mock the variables
-  const rawDockerComposeYml = await fs.readFile(dockerComposeYmlPath, "utf-8");
-  const rawDockerComposeYmlMocked = await mockVariables(rawDockerComposeYml);
-
-  // check if the file is valid yaml
-  let dockerComposeYmlMocked: ComposeSpecification;
-  try {
-    dockerComposeYmlMocked = YAML.parse(rawDockerComposeYmlMocked, {
-      merge: true,
-    });
-  } catch (e) {
-    printLintingError("docker-compose.yml is not a valid YAML file", String(e));
-    return false;
-  }
-
-  // Check if the file is a valid docker compose file
-  const ajv = new Ajv({ allowUnionTypes: true });
-  addFormats(ajv);
-  const validate = ajv.compile<ComposeSpecification>(dockerComposeYmlSchema);
-  const validAppYaml = validate(dockerComposeYmlMocked);
-  if (!validAppYaml) {
-    for (const err of validate.errors ?? []) {
-      printLintingError(err.instancePath, err.message ?? "Unknown error");
-    }
-    return false;
-  }
-
-  // Check if empty folders with .gitkeep exist for every volume
-  // This doesn't work properly (no easy way to detect, if a volume mount is a file or a directory)
-  /*
-  const dockerComposeYml: ComposeSpecification = YAML.parse(
-    rawDockerComposeYml,
-    { merge: true }
+  const lintingResults = await lintDockerComposeYml(
+    await fs.readFile(dockerComposeYmlPath, "utf-8"),
+    id,
+    files,
   );
-  const hostVolumeMounts = Object.keys(dockerComposeYml.services ?? {}).flatMap(
-    (service) => dockerComposeYml.services?.[service].volumes ?? []
-  );
-  const appDataPaths = new Set<string>();
-  for (const volume of hostVolumeMounts) {
-    if (typeof volume !== "string") {
-      continue;
-    }
-    const volumeMatch = volume.match(/^\$\{?APP_DATA_DIR\}?(.+?):.*$/);
-    if (!volumeMatch || !volumeMatch[1]) {
-      continue;
-    }
-    let appDataPath = path.normalize(volumeMatch[1]);
-    //process.stdout.write(appDataPath);
-    // In case the path is a file, remove the last path segment
-    if (appDataPath.split(path.sep).pop()?.includes(".") ?? false) {
-      appDataPath = path.dirname(appDataPath);
-    }
-    // If there is no directory left, skip
-    if (appDataPath === path.sep || appDataPath === ".") {
-      continue;
-    }
-    //console.log(" => " + appDataPath)
-    appDataPath = path.join(id, appDataPath);
-    appDataPaths.add(appDataPath);
-  }
-  for (const appDataPath of appDataPaths) {
-    if (!(await exists(path.join(cwd, appDataPath, ".gitkeep")))) {
-      printLintingError(
-        `Missing directory ${pc.cyan(appDataPath)} with ${pc.cyan(".gitkeep")}`,
-        `To ensure that the directory have the right permissions, create the directory and add a .gitkeep file in it to keep it in the git repository`
-      );
-    }
-  }
-  */
-
-  // Check if the image follows the naming convention
-  const services = Object.keys(dockerComposeYmlMocked.services ?? {});
-  for (const service of services) {
-    const image = dockerComposeYmlMocked.services?.[service].image;
-    if (!image) {
-      continue;
-    }
-    const imageMatch = image.match(/^(.+):(.+)@(.+)$/);
-    if (!imageMatch) {
-      printLintingError(
-        `Invalid image name ${pc.cyan(image)}`,
-        `Images should be named like ${pc.cyan("<name>:<version>@<sha256>")}`,
-      );
-      result = false;
-    } else {
-      const [, version] = imageMatch.slice(1);
-      if (version === "latest") {
-        printLintingError(
-          `Invalid image tag ${pc.cyan(version)}`,
-          `Images should not use the "latest" tag`,
-          "warning",
-        );
-      }
-    }
+  for (const result of lintingResults) {
+    printLintingError(result.title, result.message, result.severity);
   }
 
-  return result;
+  return lintingResults.filter((r) => r.severity === "error").length === 0;
 }
 
 function printLintingError(
   title: string,
   message: string,
-  severity: "error" | "warning" = "error",
+  severity: "error" | "warning" | "info" = "error",
 ) {
-  const level =
-    severity === "error"
-      ? pc.bgRed(pc.bold(" ERROR "))
-      : pc.bgYellow(pc.bold(" WARNING "));
+  let level;
+  switch (severity) {
+    case "error":
+      level = pc.bgRed(pc.bold(" ERROR "));
+      break;
+    case "warning":
+      level = pc.bgYellow(pc.bold(" WARNING "));
+      break;
+    case "info":
+      level = pc.bgBlue(pc.bold(" INFO "));
+      break;
+  }
+  if (severity === "info" && logLevel !== "info") {
+    return;
+  }
+  if (severity === "warning" && logLevel === "error") {
+    return;
+  }
   console.log(`${level} ${pc.bold(title)}: ${pc.italic(pc.gray(message))}`);
 }
