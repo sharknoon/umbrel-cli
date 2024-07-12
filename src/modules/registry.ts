@@ -7,7 +7,7 @@ interface RegistryInfo {
 const registryCache = new Map<string, RegistryInfo | false>();
 
 export async function analyzeRegistry(
-  host: string
+  host: string,
 ): Promise<RegistryInfo | false> {
   // skip the check if the cache hits
   const hit = registryCache.get(host);
@@ -41,7 +41,6 @@ export async function analyzeRegistry(
         registryCache.set(host, false);
         return false;
       }
-      
     }
 
     return isRegistry;
@@ -54,7 +53,7 @@ export async function analyzeRegistry(
 export async function getDigest(
   host: string,
   path: string,
-  tag: string
+  tag: string,
 ): Promise<string> {
   const result = await fetch(`https://${host}/v2/${path}/manifests/${tag}`, {
     method: "HEAD",
@@ -69,14 +68,14 @@ export async function getDigest(
   return digest;
 }
 
-function _parseAuthHeader(header: string): {
-  realm: string;
-  service: string;
-} | false {
+function _parseAuthHeader(header: string):
+  | {
+      realm: string;
+      service: string;
+    }
+  | false {
   if (!header.startsWith("Bearer")) {
-    console.error(
-      `❌ Only Bearer token authorization is supported: ${header}`
-    );
+    console.error(`❌ Only Bearer token authorization is supported: ${header}`);
     return false;
   }
   const realm = header.match(/realm="(.*?)"/)?.[1];
