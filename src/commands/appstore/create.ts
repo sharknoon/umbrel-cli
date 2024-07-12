@@ -152,12 +152,7 @@ async function createCommunityAppStore(dir: string) {
   // umbrel-app-store.yml
   const umbrelAppStoreTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(
-        __dirname,
-        "templates",
-        "appstore",
-        "umbrel-app-store.yml.handlebars",
-      ),
+      path.resolve(__dirname, "templates", "umbrel-app-store.yml.handlebars"),
       "utf-8",
     ),
   );
@@ -171,7 +166,7 @@ async function createCommunityAppStore(dir: string) {
   // .gitignore
   const gitignoreTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(__dirname, "templates", "appstore", "gitignore.handlebars"),
+      path.resolve(__dirname, "templates", "gitignore.handlebars"),
       "utf-8",
     ),
   );
@@ -181,7 +176,7 @@ async function createCommunityAppStore(dir: string) {
   // README.md
   const readmeTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(__dirname, "templates", "appstore", "README.md.handlebars"),
+      path.resolve(__dirname, "templates", "README.md.handlebars"),
       "utf-8",
     ),
   );

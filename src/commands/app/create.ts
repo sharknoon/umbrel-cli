@@ -88,7 +88,7 @@ export async function create(cwd: string, id?: string) {
   // Create umbrel-app.yml
   const manifestTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(__dirname, "templates", "app", "umbrel-app.yml.handlebars"),
+      path.resolve(__dirname, "templates", "umbrel-app.yml.handlebars"),
       "utf-8",
     ),
   );
@@ -103,12 +103,7 @@ export async function create(cwd: string, id?: string) {
   // Create docker-compose.yml
   const dockerComposeTemplate = Handlebars.compile(
     await fs.readFile(
-      path.resolve(
-        __dirname,
-        "templates",
-        "app",
-        "docker-compose.yml.handlebars",
-      ),
+      path.resolve(__dirname, "templates", "docker-compose.yml.handlebars"),
       "utf-8",
     ),
   );
@@ -123,7 +118,7 @@ export async function create(cwd: string, id?: string) {
   if (needsExportSh) {
     const exportsTemplate = Handlebars.compile(
       await fs.readFile(
-        path.resolve(__dirname, "templates", "app", "exports.sh.handlebars"),
+        path.resolve(__dirname, "templates", "exports.sh.handlebars"),
         "utf-8",
       ),
     );
