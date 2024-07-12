@@ -29,8 +29,7 @@ export default async function umbrelAppYmlSchema() {
           {
             message: "Taglines should not end with a period",
           },
-        )
-        .optional(),
+        ),
       icon: z.string().optional(),
       category: z.enum([
         "files",
