@@ -1,6 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { cancel, group, confirm, log, note, outro, text } from "@clack/prompts";
+import {
+  cancel,
+  group,
+  confirm,
+  log,
+  note,
+  outro,
+  text,
+  intro,
+} from "@clack/prompts";
 import pc from "picocolors";
 import Handlebars from "handlebars";
 import {
@@ -13,6 +22,8 @@ import { MESSAGE_ABORTED } from "../../modules/console";
 import { exit } from "../../modules/process";
 
 export async function create(cwd: string, id?: string) {
+  intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App "))}`);
+
   // Create or load the App Store
   const appStoreType = await getAppStoreType(cwd);
   const appStoreId = (await getUmbrelAppStoreYml(cwd))?.id;
