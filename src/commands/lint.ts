@@ -43,7 +43,9 @@ export async function lint(
     files.forEach((file) => (file.path = `${id}/${file.path}`));
     noLintingErrors = (await umbrelAppYml(cwd, id)) && noLintingErrors;
     noLintingErrors =
-      (await dockerComposeYml(cwd, id, files)) && noLintingErrors;
+      (await dockerComposeYml(cwd, id, files, {
+        checkImageArchitectures: appIds.length === 1,
+      })) && noLintingErrors;
     noLintingErrors = lintDirectoryStructure(files) && noLintingErrors;
   }
   noLintingErrors =
@@ -165,6 +167,7 @@ async function dockerComposeYml(
   cwd: string,
   id: string,
   files: Entry[],
+  options: { checkImageArchitectures?: boolean } = {},
 ): Promise<boolean> {
   console.log(`Checking ${path.join(id, "docker-compose.yml")}`);
 
@@ -182,6 +185,7 @@ async function dockerComposeYml(
     await fs.readFile(dockerComposeYmlPath, "utf-8"),
     id,
     files,
+    options,
   );
   for (const result of lintingResults) {
     printLintingError(result.title, result.message, result.severity);

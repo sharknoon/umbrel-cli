@@ -10,6 +10,8 @@ import dockerComposeYmlSchema from "../schemas/docker-compose.yml.schema.json";
 import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 import { ZodIssueCode } from "zod";
 import { getSourceMapForKey } from "../utils/yaml";
+import { isMultiplatformImage } from "./registry";
+import { Image } from "./image";
 
 export interface LintingResult {
   id:
@@ -22,7 +24,8 @@ export interface LintingResult {
     | "invalid_submission_field"
     | "missing_file_or_directory"
     | "empty_app_data_directory"
-    | "external_port_mapping";
+    | "external_port_mapping"
+    | "invalid_image_architectures";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -144,6 +147,7 @@ export async function lintDockerComposeYml(
   content: string,
   id: string,
   files: Entry[],
+  options: { checkImageArchitectures?: boolean } = {},
 ): Promise<LintingResult[]> {
   // Mock the variables
   const rawDockerComposeYmlMocked = await mockVariables(content);
@@ -425,6 +429,49 @@ export async function lintDockerComposeYml(
             file: `${id}/docker-compose.yml`,
           });
         }
+      }
+    }
+  }
+
+  // Check if the image architectures are at least arm64 and amd64
+  // The flag "checkImageArchitectures" exists to prevent running into rate limiting by container registries
+  // when linting all apps at once
+  if (options.checkImageArchitectures) {
+    for (const service of services) {
+      const imageString = dockerComposeYml.services?.[service].image;
+      if (!imageString) {
+        continue;
+      }
+
+      let image: Image;
+      try {
+        image = await Image.fromString(imageString);
+      } catch (error) {
+        // This should never happen, as we already parsed the file before
+        // But better be safe
+        result.push({
+          id: "invalid_docker_image_name",
+          severity: "error",
+          title: "Invalid image name",
+          message: String(error),
+          file: `${id}/docker-compose.yml`,
+        });
+        continue;
+      }
+      const supportsArm64AndAmd64 = await isMultiplatformImage(image, [
+        { os: "linux", architecture: "arm64" },
+        { os: "linux", architecture: "amd64" },
+      ]);
+      if (!supportsArm64AndAmd64) {
+        result.push({
+          id: "invalid_image_architectures",
+          propertiesPath: `services.${service}.image`,
+          ...getSourceMapForKey(content, ["services", service, "image"]),
+          severity: "error",
+          title: `Invalid image architectures for image "${image}"`,
+          message: `The image "${image}" does not support the architectures "arm64" and "amd64". Please make sure that the image supports both architectures.`,
+          file: `${id}/docker-compose.yml`,
+        });
       }
     }
   }
