@@ -23,6 +23,13 @@ export class Image {
     this.#digest = digest;
   }
 
+  static #fixAPIHost(host: string): string {
+    if (host === "docker.io") {
+      return "registry.hub.docker.com";
+    }
+    return host;
+  }
+
   static async fromString(image: string): Promise<Image> {
     const regex =
       /^(?<path>[a-z0-9_.:-]+?(?:\/[a-z0-9_.-]+)*)(?::(?<tag>[a-zA-Z0-9_.-]+))?(?!.*(?<!.*@.*):)(?:@(?<digest>[a-z0-9]+:[0-9a-f]{64}))?$/m;
@@ -40,11 +47,11 @@ export class Image {
 
     // Check if the first segment is a registry host
     // The image can be either "org/image:tag" or "host/image:tag"
-    // E.g. "library/nginx:latest" or "docker.io/nginx:latest"
+    // E.g. "library/nginx:latest" or "docker.io/nginx:latest" or "localhost/nginx:latest"
     // Looging for a "." in the first segment can't be used to determine if the first segment is a host,
     // because any hostname is valid, for example "localhost"
     let host = undefined;
-    if (await Image.#isRegistry(pathSegments[0])) {
+    if (await Image.isRegistry(pathSegments[0])) {
       host = pathSegments[0];
       path = pathSegments.slice(1).join("/");
     }
@@ -54,13 +61,11 @@ export class Image {
 
   static #registryCache = new Map<string, boolean>();
 
-  static async #isRegistry(host: string): Promise<boolean> {
-    if (host === "docker.io") {
-      host = "registry.hub.docker.com";
-    }
+  static async isRegistry(host: string): Promise<boolean> {
+    host = Image.#fixAPIHost(host);
 
     // skip the check if the cache hits
-    const hit = this.#registryCache.get(host);
+    const hit = Image.#registryCache.get(host);
     if (typeof hit === "boolean") {
       return hit;
     }
@@ -75,7 +80,7 @@ export class Image {
         result.headers.get("Docker-Distribution-Api-Version") === "registry/2.0"
       );
     } catch (error) {
-      this.#registryCache.set(host, false);
+      Image.#registryCache.set(host, false);
       return false;
     }
   }
@@ -85,11 +90,7 @@ export class Image {
   }
 
   get APIHost(): string {
-    const host = this.host;
-    if (host === "docker.io") {
-      return "registry.hub.docker.com";
-    }
-    return host;
+    return Image.#fixAPIHost(this.host);
   }
 
   get path(): string {
@@ -124,5 +125,9 @@ export class Image {
       result = `${result}@${this.#digest}`;
     }
     return result;
+  }
+
+  async toFullString(): Promise<string> {
+    return `${this.host}/${this.path}:${this.tag}@${await this.digest()}`;
   }
 }

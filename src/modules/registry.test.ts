@@ -1,29 +1,47 @@
 import { describe, it, expect } from "vitest";
-import { analyzeRegistry, getDigest, getToken, parseAuthHeader } from "./registry";
+import { getAuthInfo, getDigest, getToken, parseAuthHeader } from "./registry";
+import { Image } from "./image";
 
-describe("analyzeRegistry", () => {
+describe("getAuthInfo", () => {
   it("should return the RegistryInfo for a valid registry host", async () => {
-    const result = await analyzeRegistry("registry.hub.docker.com");
-    expect(result).toBeTruthy();
+    const result = await getAuthInfo(
+      new Image({ host: "docker.io", path: "nginx" }),
+    );
+    expect(result.host).toEqual("registry.hub.docker.com");
+    expect(result.auth).toBeTruthy();
+    expect(result.auth?.realm).toEqual("https://auth.docker.io/token");
+    expect(result.auth?.service).toEqual("registry.docker.io");
+    expect(result.auth?.scope).toBeUndefined();
   });
 
   it("should return the RegistryInfo for another valid registry host", async () => {
-    const result = await analyzeRegistry("ghcr.io");
-    expect(result).toBeTruthy();
+    const result = await getAuthInfo(
+      new Image({ host: "ghcr.io", path: "something" }),
+    );
+    expect(result.host).toEqual("ghcr.io");
+    expect(result.auth).toBeTruthy();
+    expect(result.auth?.realm).toEqual("https://ghcr.io/token");
+    expect(result.auth?.service).toEqual("ghcr.io");
+    expect(result.auth?.scope).toEqual("repository:user/image:pull");
   });
 
   it("should return the RegistryInfo for yet another valid registry host", async () => {
-    const result = await analyzeRegistry("quay.io");
-    expect(result).toBeTruthy();
-  });
-
-  it("should return the RegistryInfo for the redirect of docker.io to registry.hub.docker.com", async () => {
-    const result = await analyzeRegistry("docker.io");
-    expect(result).toBeTruthy();
+    const result = await getAuthInfo(
+      new Image({ host: "quay.io", path: "something" }),
+    );
+    expect(result.host).toEqual("quay.io");
+    expect(result.auth).toBeTruthy();
+    expect(result.auth?.realm).toEqual("https://quay.io/v2/auth");
+    expect(result.auth?.service).toEqual("quay.io");
+    expect(result.auth?.scope).toBeUndefined();
   });
 
   it("should throw for an invalid registry host", async () => {
-    expect(analyzeRegistry("invalid.registry.com")).rejects.toThrowError();
+    expect(
+      getAuthInfo(
+        new Image({ host: "invalid.registry.com", path: "something" }),
+      ),
+    ).rejects.toThrowError();
   });
 });
 
@@ -76,11 +94,13 @@ describe("parseAuthHeader", () => {
 
 describe("getToken", () => {
   it("should return the token for a valid image path and auth info", async () => {
-    const result = await getToken({
-      host: "docker.io",
-      path: "nginx",
-      tag: "latest",
-    });
+    const result = await getToken(
+      new Image({
+        host: "docker.io",
+        path: "nginx",
+        tag: "latest",
+      }),
+    );
 
     expect(result).toBeTruthy();
     expect(typeof result).toBe("string");
@@ -88,11 +108,13 @@ describe("getToken", () => {
   });
 
   it("should return the token for a valid image path and auth info from another registry", async () => {
-    const result = await getToken({
-      host: "quay.io",
-      path: "prometheus/node-exporter",
-      tag: "latest",
-    });
+    const result = await getToken(
+      new Image({
+        host: "quay.io",
+        path: "prometheus/node-exporter",
+        tag: "latest",
+      }),
+    );
 
     expect(result).toBeTruthy();
     expect(typeof result).toBe("string");
@@ -100,11 +122,13 @@ describe("getToken", () => {
   });
 
   it("should return the token for a valid image path and auth info from yet another registry", async () => {
-    const result = await getToken({
-      host: "ghcr.io",
-      path: "immich-app/immich-server",
-      tag: "latest",
-    });
+    const result = await getToken(
+      new Image({
+        host: "ghcr.io",
+        path: "immich-app/immich-server",
+        tag: "latest",
+      }),
+    );
 
     expect(result).toBeTruthy();
     expect(typeof result).toBe("string");
@@ -113,30 +137,31 @@ describe("getToken", () => {
 
   it("should throw an error if the token cannot be retrieved", async () => {
     await expect(
-      getToken({ host: "blaaa", path: "sadf", tag: "sadlofgkj" }),
+      getToken(new Image({ host: "blaaa", path: "sadf", tag: "sadlofgkj" })),
     ).rejects.toThrowError();
   });
 });
 
 describe("getDigest", () => {
   it("should return the digest for a valid image", async () => {
-    const image = {
+    const image = new Image({
       host: "docker.io",
       path: "nginx",
       tag: "latest",
-    };
+    });
     const result = await getDigest(image);
     expect(result).toBeTruthy();
     expect(typeof result).toBe("string");
     expect(result.length).toBeGreaterThan(25);
+    console.log(result);
   });
 
   it("should throw an error if the digest cannot be retrieved", async () => {
-    const image = {
+    const image = new Image({
       host: "docker.io",
       path: "invalid-image",
       tag: "latest",
-    };
+    });
     await expect(getDigest(image)).rejects.toThrowError();
   });
 });

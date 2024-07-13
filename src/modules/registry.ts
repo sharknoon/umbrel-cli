@@ -13,13 +13,9 @@ export interface AuthInfo {
 
 const registryCache = new Map<string, RegistryInfo | false>();
 
-export async function analyzeRegistry(host: string): Promise<RegistryInfo> {
-  if (host === "docker.io") {
-    host = "registry.hub.docker.com";
-  }
-
+export async function getAuthInfo(image: Image): Promise<RegistryInfo> {
   // skip the check if the cache hits
-  const hit = registryCache.get(host);
+  const hit = registryCache.get(image.APIHost);
   if (hit) {
     return hit;
   }
@@ -27,31 +23,33 @@ export async function analyzeRegistry(host: string): Promise<RegistryInfo> {
   try {
     const controller = new AbortController();
     setTimeout(() => controller.abort(), 1000);
-    const result = await fetch(`https://${host}/v2/`, {
+    const result = await fetch(`https://${image.APIHost}/v2/`, {
       signal: controller.signal,
     });
     const isRegistry =
-      result.headers.get("docker-distribution-api-version") === "registry/2.0";
+      result.headers.get("Docker-Distribution-Api-Version") === "registry/2.0";
     if (!isRegistry) {
-      throw new Error(`"${host}" is not a valid CNCF distribution registry`);
+      throw new Error(
+        `"${image.APIHost}" is not a valid CNCF distribution registry`,
+      );
     }
 
-    let auth: AuthInfo | undefined;
+    let auth: AuthInfo | undefined = undefined;
     const needsAuth = result.status === 401;
     if (needsAuth) {
-      const authHeader = result.headers.get("www-authenticate");
+      const authHeader = result.headers.get("Www-Authenticate");
       if (!authHeader) {
-        throw new Error(`Missing auth header for "https://${host}/v2/"`);
+        throw new Error(`Missing auth header for "${result.url}"`);
       }
       auth = parseAuthHeader(authHeader);
     }
 
-    const registryInfo: RegistryInfo = { host, auth };
-    registryCache.set(host, registryInfo);
+    const registryInfo: RegistryInfo = { host: image.APIHost, auth };
+    registryCache.set(image.APIHost, registryInfo);
 
     return registryInfo;
   } catch (error) {
-    registryCache.set(host, false);
+    registryCache.set(image.APIHost, false);
     throw error;
   }
 }
@@ -73,7 +71,7 @@ export function parseAuthHeader(header: string): AuthInfo {
 }
 
 export async function getToken(image: Image): Promise<string | undefined> {
-  const authInfo = await analyzeRegistry(image.APIHost);
+  const authInfo = await getAuthInfo(image);
   if (!authInfo.auth) {
     return;
   }
