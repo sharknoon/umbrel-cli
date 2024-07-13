@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { getAuthInfo, getDigest, getManifest, getToken, parseAuthHeader } from "./registry";
+import {
+  getAuthInfo,
+  getDigest,
+  getManifest,
+  getToken,
+  isMultiplatformImage,
+  ManifestIndexV1,
+  parseAuthHeader,
+} from "./registry";
 import { Image } from "./image";
 
 describe("getAuthInfo", () => {
@@ -177,8 +185,11 @@ describe("getManifest", () => {
     expect(result).toBeTruthy();
     expect(result.schemaVersion).toBe(2);
     expect(result.mediaType).toBe("application/vnd.oci.image.index.v1+json");
-    //expect(result.config).toBeTruthy();
-    //expect(result.layers).toBeTruthy();
+    expect((result as ManifestIndexV1).manifests[0].platform).toBeTruthy();
+    expect((result as ManifestIndexV1).manifests[0].mediaType).toEqual(
+      "application/vnd.oci.image.manifest.v1+json",
+    );
+    expect((result as ManifestIndexV1).manifests[0].size).toBeGreaterThan(0);
   });
 
   it("should throw an error if the manifest cannot be retrieved", async () => {
@@ -188,5 +199,77 @@ describe("getManifest", () => {
       tag: "latest",
     });
     await expect(getManifest(image)).rejects.toThrowError();
+  });
+});
+
+describe("isMultiplatformImage", () => {
+  it("should return false for a manifest v1 image", async () => {
+    const image = new Image({
+      host: "docker.io",
+      path: "nginx",
+      tag: "latest",
+    });
+    const result = await isMultiplatformImage(image);
+    expect(result).toBe(false);
+  });
+
+  it("should return false for a manifest v2 image", async () => {
+    const image = new Image({
+      host: "docker.io",
+      path: "nginx",
+      tag: "latest",
+    });
+    const result = await isMultiplatformImage(image);
+    expect(result).toBe(false);
+  });
+
+  it("should return true for a image with supported architectures", async () => {
+    const image = new Image({
+      path: "nginx",
+      tag: "1.27.0",
+    });
+    const result = await isMultiplatformImage(image, [
+      { os: "linux", architecture: "arm64" },
+      { os: "linux", architecture: "amd64" },
+    ]);
+    expect(result).toBe(true);
+  });
+
+  it("should return false for a manifest index v1 image without supported architectures", async () => {
+    const image = new Image({
+      host: "docker.io",
+      path: "nginx",
+      tag: "latest",
+    });
+    const result = await isMultiplatformImage(image, [
+      { os: "linux", architecture: "ppc64le" },
+      { os: "linux", architecture: "s390x" },
+    ]);
+    expect(result).toBe(false);
+  });
+
+  it("should return true for a manifest list v2 image with supported architectures", async () => {
+    const image = new Image({
+      host: "docker.io",
+      path: "nginx",
+      tag: "latest",
+    });
+    const result = await isMultiplatformImage(image, [
+      { os: "linux", architecture: "arm64" },
+      { os: "linux", architecture: "amd64" },
+    ]);
+    expect(result).toBe(true);
+  });
+
+  it("should return false for a image without supported architectures", async () => {
+    const image = new Image({
+      path: "teamspeak",
+      tag: "3.13.7",
+    });
+    const result = await isMultiplatformImage(image, [
+      { os: "linux", architecture: "arm64" },
+      { os: "linux", architecture: "amd64" },
+    ]);
+    expect(result).toBe(false);
   });
 });

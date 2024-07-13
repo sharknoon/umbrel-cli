@@ -241,3 +241,29 @@ export async function getManifest(
       throw new Error(`Unsupported content type: ${contentType}`);
   }
 }
+
+export async function isMultiplatformImage(
+  image: Image,
+  architectures: { os: string; architecture: string; variant?: string }[] = [
+    { os: "linux", architecture: "arm64" },
+    { os: "linux", architecture: "amd64" },
+  ],
+): Promise<boolean> {
+  const manifest = await getManifest(image);
+  switch (manifest.mediaType) {
+    case "application/vnd.oci.image.manifest.v1+json":
+      return false;
+    case "application/vnd.docker.distribution.manifest.v2+json":
+      return false;
+    case "application/vnd.oci.image.index.v1+json":
+    case "application/vnd.docker.distribution.manifest.list.v2+json":
+      return architectures.every((arch) =>
+        manifest.manifests.some(
+          (m) =>
+            (!arch.os || arch.os === m.platform.os) &&
+            arch.architecture === m.platform.architecture &&
+            (!arch.variant || arch.variant === m.platform.variant),
+        ),
+      );
+  }
+}
