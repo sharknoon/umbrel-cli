@@ -38,7 +38,7 @@ describe("Image.fromString(image)", () => {
     expect(result.path).toEqual("httpd");
     expect(result.APIPath).toEqual("library/httpd");
     expect(result.tag).toEqual("latest");
-    //expect(await result.digest()).toEqual(undefined);
+    expect((await result.digest()).startsWith("sha256")).toBeTruthy();
   });
 
   it("should resolve image with path only", async () => {

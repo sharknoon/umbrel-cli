@@ -104,7 +104,7 @@ export async function getDigest(image: Image): Promise<string> {
   );
   if (!result.ok) {
     throw new Error(
-      `HTTP ${result.status} for ${image.host}/${image.path}:${image.tag}`,
+      `HTTP ${result.status} for ${image.toString()}: ${await result.text()}`,
     );
   }
   const digest = result.headers.get("Docker-Content-Digest");
@@ -112,4 +112,132 @@ export async function getDigest(image: Image): Promise<string> {
     throw new Error("Missing digest in the response headers");
   }
   return digest;
+}
+
+export interface ManifestListV2 {
+  schemaVersion: 2;
+  mediaType: "application/vnd.docker.distribution.manifest.list.v2+json";
+  manifests: {
+    mediaType: string;
+    size: number;
+    digest: string;
+    platform: {
+      architecture: string;
+      os: string;
+      "os.version"?: string;
+      "os.features"?: string[];
+      variant?: string;
+      features?: string[];
+    };
+  }[];
+}
+
+export interface ManifestV2 {
+  schemaVersion: 2;
+  mediaType: "application/vnd.docker.distribution.manifest.v2+json";
+  artifactType?: string;
+  config: {
+    mediaType: "application/vnd.docker.container.image.v1+json";
+    size: number;
+    digest: string;
+  };
+  layers: {
+    mediaType: "application/vnd.docker.image.rootfs.diff.tar.gzip";
+    size: number;
+    digest: string;
+    urls?: string[];
+  }[];
+}
+
+export interface ManifestIndexV1 {
+  schemaVersion: 2;
+  mediaType: "application/vnd.oci.image.index.v1+json";
+  artifactType?: string;
+  manifests: {
+    mediaType:
+      | "application/vnd.oci.image.manifest.v1+json"
+      | "application/vnd.oci.image.index.v1+json";
+    digest: string;
+    size: number;
+    urls?: string[];
+    annotations?: Record<string, string>;
+    data?: string;
+    artifactType?: string;
+    platform: {
+      architecture: string;
+      os: string;
+      "os.version"?: string;
+      "os.features"?: string[];
+      variant?: string;
+      features?: string[];
+    };
+  }[];
+  subject?: {
+    mediaType: string;
+    digest: string;
+    size: number;
+    urls?: string[];
+    annotations?: Record<string, string>;
+    data?: string;
+    artifactType?: string;
+  };
+  annotations?: Record<string, string>;
+}
+
+export interface ManifestV1 {
+  schemaVersion: 2;
+  mediaType: "application/vnd.oci.image.manifest.v1+json";
+  config: {
+    mediaType: "application/vnd.oci.image.config.v1+json";
+    digest: string;
+    size: number;
+    urls?: string[];
+    annotations?: Record<string, string>;
+  };
+  layers: {
+    mediaType:
+      | "application/vnd.oci.image.layer.v1.tar"
+      | "application/vnd.oci.image.layer.v1.tar+gzip"
+      | "application/vnd.oci.image.layer.nondistributable.v1.tar"
+      | "application/vnd.oci.image.layer.nondistributable.v1.tar+gzip";
+    digest: string;
+    size: number;
+    urls?: string[];
+    annotations?: Record<string, string>;
+  }[];
+  annotations?: Record<string, string>;
+}
+
+export async function getManifest(
+  image: Image,
+): Promise<ManifestV1 | ManifestIndexV1 | ManifestV2 | ManifestListV2> {
+  const headers = new Headers();
+  headers.append(
+    "Accept",
+    "application/vnd.oci.image.manifest.v1+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json",
+  );
+  const result = await fetchRegistry(
+    image,
+    `https://${image.APIHost}/v2/${image.APIPath}/manifests/${image.tag}`,
+    { headers },
+  );
+  if (!result.ok) {
+    throw new Error(
+      `HTTP ${result.status} for ${image.toString()}: ${await result.text()}`,
+    );
+  }
+  const json = await result.json();
+  const contentType = result.headers.get("Content-Type");
+  switch (contentType) {
+    case "application/vnd.oci.image.manifest.v1+json":
+      return json as ManifestV1;
+    case "application/vnd.oci.image.index.v1+json":
+      return json as ManifestIndexV1;
+    case "application/vnd.docker.distribution.manifest.v2+json":
+      return json as ManifestV2;
+    case "application/vnd.docker.distribution.manifest.list.v2+json":
+      return json as ManifestListV2;
+    default:
+      throw new Error(`Unsupported content type: ${contentType}`);
+  }
 }

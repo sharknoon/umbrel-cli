@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getAuthInfo, getDigest, getToken, parseAuthHeader } from "./registry";
+import { getAuthInfo, getDigest, getManifest, getToken, parseAuthHeader } from "./registry";
 import { Image } from "./image";
 
 describe("getAuthInfo", () => {
@@ -163,5 +163,30 @@ describe("getDigest", () => {
       tag: "latest",
     });
     await expect(getDigest(image)).rejects.toThrowError();
+  });
+});
+
+describe("getManifest", () => {
+  it("should return the manifest for a valid image", async () => {
+    const image = new Image({
+      host: "docker.io",
+      path: "nginx",
+      tag: "latest",
+    });
+    const result = await getManifest(image);
+    expect(result).toBeTruthy();
+    expect(result.schemaVersion).toBe(2);
+    expect(result.mediaType).toBe("application/vnd.oci.image.index.v1+json");
+    //expect(result.config).toBeTruthy();
+    //expect(result.layers).toBeTruthy();
+  });
+
+  it("should throw an error if the manifest cannot be retrieved", async () => {
+    const image = new Image({
+      host: "docker.io",
+      path: "invalid-image",
+      tag: "latest",
+    });
+    await expect(getManifest(image)).rejects.toThrowError();
   });
 });
