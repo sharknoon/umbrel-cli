@@ -8,7 +8,7 @@ import { MESSAGE_ABORTED } from "../modules/console";
 import { exit } from "../modules/process";
 import { exists } from "../utils/fs";
 import { ComposeSpecification } from "../schemas/docker-compose.yml.schema";
-import { resolveImage } from "../modules/image";
+import { Image } from "../modules/image";
 
 export async function update(cwd: string, id?: string) {
   console.clear();
@@ -57,14 +57,14 @@ export async function update(cwd: string, id?: string) {
     cancel("docker-compose.yml is not a valid YAML file: " + e);
     return false;
   }
-  const images = [];
+  const images: Image[] = [];
   for (const service in dockerComposeYml.services ?? {}) {
     const image = dockerComposeYml.services?.[service]?.image;
     if (!image) {
       continue;
     }
     try {
-      images.push(await resolveImage(image));
+      images.push(await Image.fromString(image));
     } catch (e) {
       cancel(`The service '${service}' has an invalid image '${image}': ${e}`);
       return;

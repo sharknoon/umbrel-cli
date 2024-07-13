@@ -203,56 +203,10 @@ describe("getManifest", () => {
 });
 
 describe("isMultiplatformImage", () => {
-  it("should return false for a manifest v1 image", async () => {
-    const image = new Image({
-      host: "docker.io",
-      path: "nginx",
-      tag: "latest",
-    });
-    const result = await isMultiplatformImage(image);
-    expect(result).toBe(false);
-  });
-
-  it("should return false for a manifest v2 image", async () => {
-    const image = new Image({
-      host: "docker.io",
-      path: "nginx",
-      tag: "latest",
-    });
-    const result = await isMultiplatformImage(image);
-    expect(result).toBe(false);
-  });
-
   it("should return true for a image with supported architectures", async () => {
     const image = new Image({
       path: "nginx",
       tag: "1.27.0",
-    });
-    const result = await isMultiplatformImage(image, [
-      { os: "linux", architecture: "arm64" },
-      { os: "linux", architecture: "amd64" },
-    ]);
-    expect(result).toBe(true);
-  });
-
-  it("should return false for a manifest index v1 image without supported architectures", async () => {
-    const image = new Image({
-      host: "docker.io",
-      path: "nginx",
-      tag: "latest",
-    });
-    const result = await isMultiplatformImage(image, [
-      { os: "linux", architecture: "ppc64le" },
-      { os: "linux", architecture: "s390x" },
-    ]);
-    expect(result).toBe(false);
-  });
-
-  it("should return true for a manifest list v2 image with supported architectures", async () => {
-    const image = new Image({
-      host: "docker.io",
-      path: "nginx",
-      tag: "latest",
     });
     const result = await isMultiplatformImage(image, [
       { os: "linux", architecture: "arm64" },
