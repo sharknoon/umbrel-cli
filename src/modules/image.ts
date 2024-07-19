@@ -1,5 +1,3 @@
-import { getDigest } from "./registry";
-
 export class Image {
   #host?: string;
   #path: string;
@@ -109,8 +107,8 @@ export class Image {
     return this.#tag || "latest";
   }
 
-  async digest(): Promise<string> {
-    return this.#digest || (await getDigest(this));
+  get digest(): string | undefined {
+    return this.#digest;
   }
 
   toString(): string {
@@ -128,6 +126,6 @@ export class Image {
   }
 
   async toFullString(): Promise<string> {
-    return `${this.host}/${this.path}:${this.tag}@${await this.digest()}`;
+    return `${this.host}/${this.path}:${this.tag}${this.digest ? `@${this.digest}` : ""}`;
   }
 }

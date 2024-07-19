@@ -3,7 +3,6 @@ import yargs from "yargs";
 import { create as createAppStore } from "./commands/appstore/create";
 import { create as createApp } from "./commands/app/create";
 import pc from "picocolors";
-import { intro } from "@clack/prompts";
 import { lint } from "./commands/lint";
 import { port } from "./commands/generate/port";
 import { test } from "./commands/test";
@@ -54,7 +53,6 @@ export async function main(args: string[]) {
         });
       },
       async (argv) => {
-        intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App "))}`);
         await requireAppStoreDirectory(argv.w);
         await createApp(argv.w, argv.id as string | undefined);
       },

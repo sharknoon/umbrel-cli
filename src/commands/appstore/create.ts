@@ -25,6 +25,7 @@ import { exit } from "../../modules/process";
 
 export async function create(cwd: string, id?: string) {
   intro(`${pc.bgBlue(pc.white(" Initialize an Umbrel App Store "))}`);
+
   if (await isAppStoreDirectory(cwd)) {
     note(
       `  Get started by creating a new app using: ${pc.cyan(

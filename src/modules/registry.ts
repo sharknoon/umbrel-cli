@@ -218,7 +218,7 @@ export async function getManifest(
   );
   const result = await fetchRegistry(
     image,
-    `https://${image.APIHost}/v2/${image.APIPath}/manifests/${image.tag}`,
+    `https://${image.APIHost}/v2/${image.APIPath}/manifests/${image.digest ? encodeURIComponent(image.digest) : image.tag}`,
     { headers },
   );
   if (!result.ok) {

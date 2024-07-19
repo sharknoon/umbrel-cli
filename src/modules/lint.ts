@@ -458,18 +458,30 @@ export async function lintDockerComposeYml(
         });
         continue;
       }
-      const supportsArm64AndAmd64 = await isMultiplatformImage(image, [
-        { os: "linux", architecture: "arm64" },
-        { os: "linux", architecture: "amd64" },
-      ]);
-      if (!supportsArm64AndAmd64) {
+      try {
+        const supportsArm64AndAmd64 = await isMultiplatformImage(image, [
+          { os: "linux", architecture: "arm64" },
+          { os: "linux", architecture: "amd64" },
+        ]);
+        if (!supportsArm64AndAmd64) {
+          result.push({
+            id: "invalid_image_architectures",
+            propertiesPath: `services.${service}.image`,
+            ...getSourceMapForKey(content, ["services", service, "image"]),
+            severity: "error",
+            title: `Invalid image architectures for image "${image}"`,
+            message: `The image "${image}" does not support the architectures "arm64" and "amd64". Please make sure that the image supports both architectures.`,
+            file: `${id}/docker-compose.yml`,
+          });
+        }
+      } catch (error) {
         result.push({
-          id: "invalid_image_architectures",
+          id: "invalid_docker_image_name",
           propertiesPath: `services.${service}.image`,
           ...getSourceMapForKey(content, ["services", service, "image"]),
           severity: "error",
-          title: `Invalid image architectures for image "${image}"`,
-          message: `The image "${image}" does not support the architectures "arm64" and "amd64". Please make sure that the image supports both architectures.`,
+          title: `Invalid image name "${image}"`,
+          message: String(error),
           file: `${id}/docker-compose.yml`,
         });
       }
