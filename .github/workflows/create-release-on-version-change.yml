@@ -6,34 +6,51 @@ on:
       - "main"
 
 jobs:
-  release:
+  check:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+      version: ${{ steps.check.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - id: check
         uses: EndBug/version-check@v2
         with:
           diff-search: true
-      - if: steps.check.outputs.changed == 'true'
-        uses: actions/setup-node@v4
+
+  test:
+    if: needs.check.outputs.changed == 'true'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --include=dev
+      - run: npm run test
+
+  release:
+    needs:
+      - check
+      - test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
-      - if: steps.check.outputs.changed == 'true'
-        run: npm ci
-      - if: steps.check.outputs.changed == 'true'
-        run: npm run test
-      - if: steps.check.outputs.changed == 'true'
-        run: npm publish --provenance --access public
+      - run: npm ci
+      - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - if: steps.check.outputs.changed == 'true'
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
           draft: true
-          name: umbrelCLI v${{ steps.check.outputs.version }}
-          tag_name: v${{ steps.check.outputs.version }}
+          name: umbrelCLI v${{ needs.check.outputs.version }}
+          tag_name: v${{ needs.check.outputs.version }}
           body: TODO
