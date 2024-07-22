@@ -16,5 +16,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci --include=dev # need to install dev dependencies (e.g. vitest, eslint)
+      - run: npm ci
       - run: npm run ${{ matrix.task }}
