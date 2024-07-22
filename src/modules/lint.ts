@@ -10,7 +10,7 @@ import dockerComposeYmlSchema from "../schemas/docker-compose.yml.schema.json";
 import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
 import { ZodIssueCode } from "zod";
 import { getSourceMapForKey } from "../utils/yaml";
-import { isMultiplatformImage } from "./registry";
+import { getArchitectures } from "./registry";
 import { Image } from "./image";
 
 export interface LintingResult {
@@ -272,7 +272,7 @@ export async function lintDockerComposeYml(
             ]),
             severity: "error",
             title: `Invalid YAML boolean value for key "${key}"`,
-            message: `Boolean values thould be strings like "${value}" instead of ${value}`,
+            message: `Boolean values should be strings like "${value}" instead of ${value}`,
             file: `${id}/docker-compose.yml`,
           });
         }
@@ -361,9 +361,9 @@ export async function lintDockerComposeYml(
                   service,
                   "volumes",
                 ]),
-                severity: "error",
-                title: `Missing file/directory "/${id}/${match}"`,
-                message: `The volume "${volume}" tries to mount the file/directory "/${id}/${match}", but it is not present! Please create that file/directory!`,
+                severity: "info",
+                title: `Mounted file/directory "/${id}/${match}" doesn't exist`,
+                message: `The volume "${volume}" tries to mount the file/directory "/${id}/${match}", but it is not present. This can lead to permission errors!`,
                 file: `${id}/docker-compose.yml`,
               });
             }
@@ -389,9 +389,9 @@ export async function lintDockerComposeYml(
                   service,
                   "volumes",
                 ]),
-                severity: "error",
-                title: `Missing file/directory "/${id}/${match}"`,
-                message: `The volume "${volume.source}:${volume.target}" tries to mount the file/directory "/${id}/${match}", but it is not present! Please create that file/directory!`,
+                severity: "info",
+                title: `Mounted file/directory "/${id}/${match}" doesn't exist`,
+                message: `The volume "${volume.source}:${volume.target}" tries to mount the file/directory "/${id}/${match}", but it is not present. This can lead to permission errors!`,
                 file: `${id}/docker-compose.yml`,
               });
             }
@@ -459,10 +459,14 @@ export async function lintDockerComposeYml(
         continue;
       }
       try {
-        const supportsArm64AndAmd64 = await isMultiplatformImage(image, [
-          { os: "linux", architecture: "arm64" },
-          { os: "linux", architecture: "amd64" },
-        ]);
+        const architectures = await getArchitectures(image);
+        const supportsArm64AndAmd64 =
+          architectures.find(
+            (a) => a.os === "linux" && a.architecture === "arm64",
+          ) &&
+          architectures.find(
+            (a) => a.os === "linux" && a.architecture === "amd64",
+          );
         if (!supportsArm64AndAmd64) {
           result.push({
             id: "invalid_image_architectures",

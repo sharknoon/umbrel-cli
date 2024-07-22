@@ -4,7 +4,7 @@ import {
   getDigest,
   getManifest,
   getToken,
-  isMultiplatformImage,
+  getArchitectures,
   ManifestIndexV1,
   parseAuthHeader,
 } from "./registry";
@@ -202,17 +202,15 @@ describe("getManifest", () => {
   });
 });
 
-describe("isMultiplatformImage", () => {
+describe("getArchitectures", () => {
   it("should return true for a image with supported architectures", async () => {
     const image = new Image({
       path: "nginx",
       tag: "1.27.0",
     });
-    const result = await isMultiplatformImage(image, [
-      { os: "linux", architecture: "arm64" },
-      { os: "linux", architecture: "amd64" },
-    ]);
-    expect(result).toBe(true);
+    const result = await getArchitectures(image);
+    expect(result.filter((r) => r.architecture === "arm64")).toHaveLength(1);
+    expect(result.filter((r) => r.architecture === "amd64")).toHaveLength(1);
   });
 
   it("should return false for a image without supported architectures", async () => {
@@ -220,10 +218,8 @@ describe("isMultiplatformImage", () => {
       path: "teamspeak",
       tag: "3.13.7",
     });
-    const result = await isMultiplatformImage(image, [
-      { os: "linux", architecture: "arm64" },
-      { os: "linux", architecture: "amd64" },
-    ]);
-    expect(result).toBe(false);
+    const result = await getArchitectures(image);
+    expect(result.filter((r) => r.architecture === "arm64")).toHaveLength(0);
+    expect(result.filter((r) => r.architecture === "amd64")).toHaveLength(1);
   });
 });
