@@ -161,7 +161,6 @@ describe("getDigest", () => {
     expect(result).toBeTruthy();
     expect(typeof result).toBe("string");
     expect(result.length).toBeGreaterThan(25);
-    console.log(result);
   });
 
   it("should throw an error if the digest cannot be retrieved", async () => {

@@ -113,6 +113,7 @@ You can use some parts of this CLI programatically.
     lintUmbrelAppYml,
     lintUmbrelAppStoreYml,
     lintDockerComposeYml,
+    lintDirectoryStructure,
   } from "umbrel-cli/dist/lib.js";
   import fs from "node:fs/promises";
 
@@ -157,4 +158,17 @@ multipass exec umbrel-dev -- sudo chown ubuntu:ubuntu /opt/umbrel-mount
 # Cloning instead of mounting ensures the correct +x flags are set and the line breaks (\n instead of \r\n) are correct
 multipass exec umbrel-dev -- git clone https://github.com/getumbrel/umbrel.git /opt/umbrel-mount
 multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision
+```
+
+## Record those fancy CLI screenrecordings
+
+Prerequisites:
+
+- [termsvg](https://github.com/MrMarble/termsvg)
+
+```bash
+# Start the recording, stop the recording by exiting the terminal with "exit"
+termsvg rec <command>.cast
+# Convert the .cast to .svg
+termsvg export <command>.cast
 ```

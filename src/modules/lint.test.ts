@@ -5,6 +5,7 @@ import {
   lintUmbrelAppYml,
   lintDockerComposeYml,
   Entry,
+  lintDirectoryStructure,
 } from "./lint";
 
 describe("lintUmbrelAppStoreYml", () => {
@@ -424,5 +425,48 @@ services:
         'The image "teamspeak:3.13.7@sha256:10499180e88f24170812e12b34083332a7573ae35a4becba5d7a85d9761050e5" does not support the architectures "arm64" and "amd64". Please make sure that the image supports both architectures.',
       file: `${id}/docker-compose.yml`,
     });
+  });
+});
+
+describe("lintDirectoryStructure", () => {
+  it("should return an error for empty directories", () => {
+    const files: Entry[] = [
+      { path: "app", type: "directory" },
+      { path: "app/.gitkeep", type: "file" },
+      { path: "app/data", type: "directory" },
+      { path: "app/data/.gitkeep", type: "file" },
+      { path: "app/logs", type: "directory" },
+      { path: "app/public", type: "directory" },
+      { path: "app/public/.gitkeep", type: "file" },
+    ];
+
+    const results = lintDirectoryStructure(files);
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      id: "empty_app_data_directory",
+      severity: "error",
+      title: 'Empty directory "app/logs"',
+      message:
+        'Please add a ".gitkeep" file to the directory "app/logs". This is necessary to ensure the correct permissions of the directory after cloning!',
+      file: "app/logs",
+    });
+  });
+
+  it("should not return an error for directories with .gitkeep files", () => {
+    const files: Entry[] = [
+      { path: "app", type: "directory" },
+      { path: "app/.gitkeep", type: "file" },
+      { path: "app/data", type: "directory" },
+      { path: "app/data/.gitkeep", type: "file" },
+      { path: "app/logs", type: "directory" },
+      { path: "app/logs/.gitkeep", type: "file" },
+      { path: "app/public", type: "directory" },
+      { path: "app/public/.gitkeep", type: "file" },
+    ];
+
+    const results = lintDirectoryStructure(files);
+
+    expect(results).toEqual([]);
   });
 });
