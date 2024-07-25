@@ -77,7 +77,7 @@ export class Image {
       return (
         result.headers.get("Docker-Distribution-Api-Version") === "registry/2.0"
       );
-    } catch (error) {
+    } catch {
       Image.#registryCache.set(host, false);
       return false;
     }
