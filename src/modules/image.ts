@@ -125,7 +125,7 @@ export class Image {
     return result;
   }
 
-  async toFullString(): Promise<string> {
+  toFullString(): string {
     return `${this.host}/${this.path}:${this.tag}${this.digest ? `@${this.digest}` : ""}`;
   }
 }

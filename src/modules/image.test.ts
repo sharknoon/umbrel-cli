@@ -14,6 +14,8 @@ describe("Image.fromString(image)", () => {
     expect(result.digest).toEqual(
       "sha256:658b40420d7a39d6eb34c797cec8d36ff315f5adb168301aaf27dc4eafc8e228",
     );
+    expect(result.toString()).toEqual(image);
+    expect(result.toFullString()).toEqual(image);
   });
 
   it("should resolve a complex image with path, tag and digest", async () => {
@@ -28,6 +30,8 @@ describe("Image.fromString(image)", () => {
     expect(result.digest).toEqual(
       "sha256:3c6e4dca7a63c9a32a4e00da40461ce067f255987ccc9721cf18ffa087bcd1ef",
     );
+    expect(result.toString()).toEqual(image);
+    expect(result.toFullString()).toEqual("docker.io/" + image);
   });
 
   it("should resolve image with host and path", async () => {
@@ -39,6 +43,8 @@ describe("Image.fromString(image)", () => {
     expect(result.APIPath).toEqual("library/httpd");
     expect(result.tag).toEqual("latest");
     expect(result.digest).toBeUndefined();
+    expect(result.toString()).toEqual(image);
+    expect(result.toFullString()).toEqual(image + ":latest");
   });
 
   it("should resolve image with path only", async () => {
@@ -50,6 +56,8 @@ describe("Image.fromString(image)", () => {
     expect(result.APIPath).toEqual("library/httpd");
     expect(result.tag).toEqual("latest");
     expect(result.digest).toBeUndefined();
+    expect(result.toString()).toEqual(image);
+    expect(result.toFullString()).toEqual("docker.io/" + image + ":latest");
   });
 
   it("should throw an error for invalid image format", async () => {
