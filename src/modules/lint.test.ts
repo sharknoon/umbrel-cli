@@ -44,7 +44,7 @@ id: "umbrel-app-store-sparkles"
       id: "invalid_type",
       severity: "error",
       title: "name",
-      message: "Required",
+      message: 'The "name" key is required',
       file: "umbrel-app-store.yml",
     });
     expect(results[1]).toMatchObject<LintingResult>({
