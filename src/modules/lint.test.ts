@@ -390,7 +390,7 @@ services:
       severity: "info",
       title: 'External port mapping "8080:80"',
       message:
-        "Port mappings are only needed, if external clients need to access the service. If the app is only accessed from other apps/programs on the same host, please use the container name instead. If you want to expose an HTTP UI, you also don't need to expose the port.",
+        "Port mappings may be unnecessary for the app to function correctly. Docker's internal DNS resolves container names to IP addresses within the same network. External access to the web interface is handled by the app_proxy container. Port mappings are only needed if external access is required to a port not proxied by the app_proxy, or if an app needs to expose multiple ports for its functionality (e.g., DHCP, DNS, P2P, etc.).",
       file: `${id}/docker-compose.yml`,
     });
     expect(results[1]).toMatchObject<LintingResult>({
@@ -398,7 +398,7 @@ services:
       severity: "info",
       title: 'External port mapping "443:443"',
       message:
-        "Port mappings are only needed, if external clients need to access the service. If the app is only accessed from other apps/programs on the same host, please use the container name instead. If you want to expose an HTTP UI, you also don't need to expose the port.",
+        "Port mappings may be unnecessary for the app to function correctly. Docker's internal DNS resolves container names to IP addresses within the same network. External access to the web interface is handled by the app_proxy container. Port mappings are only needed if external access is required to a port not proxied by the app_proxy, or if an app needs to expose multiple ports for its functionality (e.g., DHCP, DNS, P2P, etc.).",
       file: `${id}/docker-compose.yml`,
     });
   });
