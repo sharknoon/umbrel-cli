@@ -426,7 +426,7 @@ export async function lintDockerComposeYml(
             severity: "info",
             title: `External port mapping "${port}"`,
             message:
-              "Port mappings are only needed, if external clients need to access the service. If the app is only accessed from other apps/programs on the same host, please use the container name instead. If you want to expose an HTTP UI, you also don't need to expose the port.",
+              "Port mappings may be unnecessary for the app to function correctly. Docker's internal DNS resolves container names to IP addresses within the same network. External access to the web interface is handled by the app_proxy container. Port mappings are only needed if external access is required to a port not proxied by the app_proxy, or if an app needs to expose multiple ports for its functionality (e.g., DHCP, DNS, P2P, etc.).",
             file: `${id}/docker-compose.yml`,
           });
         } else if (typeof port === "object" && "target" in port) {
@@ -437,7 +437,7 @@ export async function lintDockerComposeYml(
             severity: "info",
             title: `External port mapping "${port.target}${port.published ? `:${port.published}` : ""}`,
             message:
-              "Port mappings are only needed, if external clients need to access the service. If the app is only accessed from other apps/programs on the same host, please use the container name instead. If you want to expose an HTTP UI, you also don't need to expose the port.",
+              "Port mappings may be unnecessary for the app to function correctly. Docker's internal DNS resolves container names to IP addresses within the same network. External access to the web interface is handled by the app_proxy container. Port mappings are only needed if external access is required to a port not proxied by the app_proxy, or if an app needs to expose multiple ports for its functionality (e.g., DHCP, DNS, P2P, etc.).",
             file: `${id}/docker-compose.yml`,
           });
         }
