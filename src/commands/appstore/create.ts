@@ -114,7 +114,7 @@ async function createCommunityAppStore(dir: string) {
         text({
           message:
             'Choose the ID for your app store. This should contain only alphabets ("a to z") and dashes ("-").',
-          placeholder: "sharknoon",
+          placeholder: "sparkles",
           validate: (value) => {
             if (!value) return "Please enter an ID.";
             if (!/^[a-z]+(?:-[a-z]+)*$/.test(value))
@@ -128,7 +128,7 @@ async function createCommunityAppStore(dir: string) {
         text({
           message:
             'Choose the name of your app store. It will show up in the UI as "<name> App Store".',
-          placeholder: "Sharknoons",
+          placeholder: "Sparkles",
           validate: (value) => {
             if (!value) return "Please enter a name.";
             return undefined;
