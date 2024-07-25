@@ -12,6 +12,7 @@ import { ZodIssueCode } from "zod";
 import { getSourceMapForKey } from "../utils/yaml";
 import { getArchitectures } from "./registry";
 import { Image } from "./image";
+import { z } from "zod";
 
 export interface LintingResult {
   id:
@@ -34,6 +35,17 @@ export interface LintingResult {
   message: string;
   file: string;
 }
+
+const customErrorMap: z.ZodErrorMap = (issue, ctx) => {
+  if (issue.code === z.ZodIssueCode.invalid_type) {
+    if (issue.received === "undefined") {
+      return { message: `The "${issue.path.join(".")}" key is required` };
+    }
+  }
+  return { message: ctx.defaultError };
+};
+
+z.setErrorMap(customErrorMap);
 
 export async function lintUmbrelAppStoreYml(
   content: string,
