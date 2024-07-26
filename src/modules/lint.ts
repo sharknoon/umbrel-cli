@@ -28,7 +28,8 @@ export interface LintingResult {
     | "external_port_mapping"
     | "invalid_image_architectures"
     | "invalid_container_user"
-    | "filled_out_release_notes_on_first_submission";
+    | "filled_out_release_notes_on_first_submission"
+    | "container_network_mode_host";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -555,6 +556,22 @@ export async function lintDockerComposeYml(
         severity: "info",
         title: `Potentially using unsafe user in service "${service}"`,
         message: `The default container user "root" can lead to security vulnerabilities. If you are using the root user, please try to specify a different user (e.g. "1000:1000") in the compose file or try to set the UID/PUID and GID/PGID environment variables to 1000.`,
+        file: `${id}/docker-compose.yml`,
+      });
+    }
+  }
+
+  // Check if some services use the host network mode
+  for (const service of servicesMocked) {
+    const networkMode = dockerComposeYmlMocked.services?.[service].network_mode;
+    if (networkMode === "host") {
+      result.push({
+        id: "container_network_mode_host",
+        propertiesPath: `services.${service}.network_mode`,
+        ...getSourceMapForKey(content, ["services", service, "network_mode"]),
+        severity: "info",
+        title: `Service "${service}" uses host network mode`,
+        message: `The host network mode can lead to security vulnerabilities. If possible please use the default bridge network mode and expose the necessary ports.`,
         file: `${id}/docker-compose.yml`,
       });
     }

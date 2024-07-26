@@ -543,6 +543,59 @@ services:
     const results = await lintDockerComposeYml(content, id, files);
     expect(results).toHaveLength(0);
   });
+
+  it("should return an info message if a service uses host network mode", async () => {
+    const content = `
+version: "3.7"
+
+services:
+  app_proxy:
+    user: "1000:1000"
+    network_mode: host
+
+  server:
+    user: "1000:1000"
+    network_mode: host
+`;
+    const id = "umbrel-app";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(2);
+    expect(results[0]).toMatchObject<LintingResult>({
+      id: "container_network_mode_host",
+      severity: "info",
+      title: 'Service "app_proxy" uses host network mode',
+      message:
+        "The host network mode can lead to security vulnerabilities. If possible please use the default bridge network mode and expose the necessary ports.",
+      file: `${id}/docker-compose.yml`,
+    });
+    expect(results[1]).toMatchObject<LintingResult>({
+      id: "container_network_mode_host",
+      severity: "info",
+      title: 'Service "server" uses host network mode',
+      message:
+        "The host network mode can lead to security vulnerabilities. If possible please use the default bridge network mode and expose the necessary ports.",
+      file: `${id}/docker-compose.yml`,
+    });
+  });
+
+  it("should not return any info message if no service uses host network mode", async () => {
+    const content = `
+version: "3.7"
+
+services:
+  app_proxy:
+    user: "1000:1000"
+
+  server:
+    user: "1000:1000"
+    network_mode: bridge
+`;
+    const id = "umbrel-app";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(0);
+  });
 });
 
 describe("lintDirectoryStructure", () => {
