@@ -42,6 +42,10 @@ export async function lint(
     const files = await readDirRecursive(path.resolve(cwd, id));
     files.forEach((file) => (file.path = `${id}/${file.path}`));
     noLintingErrors = (await umbrelAppYml(cwd, id)) && noLintingErrors;
+    // we restrict the use of checkImageArchitectures to the case where only one app is being linted
+    // otherwise we would run into GitHub rate limits
+    // umbrel lint => checkImageArchitectures = false
+    // umbrel lint app-id => checkImageArchitectures = true
     noLintingErrors =
       (await dockerComposeYml(cwd, id, files, {
         checkImageArchitectures: appIds.length === 1,
