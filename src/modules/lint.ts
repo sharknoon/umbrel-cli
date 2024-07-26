@@ -27,7 +27,8 @@ export interface LintingResult {
     | "empty_app_data_directory"
     | "external_port_mapping"
     | "invalid_image_architectures"
-    | "invalid_container_user";
+    | "invalid_container_user"
+    | "filled_out_release_notes_on_first_submission";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -142,8 +143,27 @@ export async function lintUmbrelAppYml(
     result.push({
       id: "invalid_submission_field",
       severity: "error",
+      propertiesPath: "submission",
+      ...getSourceMapForKey(content, ["submission"]),
       title: `Invalid submission field "${rawUmbrelAppYml.submission}"`,
       message: `The submission field must be set to the URL of this pull request: ${options.pullRequestUrl}`,
+      file: `${id}/umbrel-app.yml`,
+    });
+  }
+
+  // If this is a new app submisson, make sure that the release notes field is empty
+  if (
+    options.isNewAppSubmission &&
+    typeof rawUmbrelAppYml.releaseNotes === "string" &&
+    rawUmbrelAppYml.releaseNotes.length > 0
+  ) {
+    result.push({
+      id: "filled_out_release_notes_on_first_submission",
+      severity: "error",
+      propertiesPath: "releaseNotes",
+      ...getSourceMapForKey(content, ["releaseNotes"]),
+      title: `"releaseNotes" needs to be empty for new app submissions`,
+      message: `The "releaseNotes" field must be empty for new app submissions as it is being displayed to the user only in case of an update.`,
       file: `${id}/umbrel-app.yml`,
     });
   }

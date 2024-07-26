@@ -166,6 +166,44 @@ submission: "blaa"
       title: 'Invalid submission field "blaa"',
     });
   });
+
+  it("should return an error for filled out release notes on first submission", async () => {
+    const content = `
+manifestVersion: 1
+id: "sparkles"
+name: "Sparkles"
+tagline: "The best app ever"
+category: "files"
+version: "1.0.0"
+port: 3000
+description: "This is the best app ever"
+website: "https://sparkles.app"
+support: "https://sparkles.app/support"
+gallery: []
+releaseNotes: "Some release notes"
+dependencies: []
+path: ""
+developer: "Sparkles Inc."
+submitter: "John Doe"
+repo: "http://github.com/sparkles/sparkles"
+submission: "https://github.com/user/repo/pull/123"
+    `;
+    const id = "umbrel-app";
+    const options = {
+      isNewAppSubmission: true,
+      pullRequestUrl: "https://github.com/user/repo/pull/123",
+    };
+    const results = await lintUmbrelAppYml(content, id, options);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      file: `${id}/umbrel-app.yml`,
+      id: "filled_out_release_notes_on_first_submission",
+      message:
+        'The "releaseNotes" field must be empty for new app submissions as it is being displayed to the user only in case of an update.',
+      severity: "error",
+      title: '"releaseNotes" needs to be empty for new app submissions',
+    });
+  });
 });
 
 describe("lintDockerComposeYml", () => {
