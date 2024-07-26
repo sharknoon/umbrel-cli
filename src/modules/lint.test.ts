@@ -205,6 +205,7 @@ version: "3"
   services:
     app:
       image: myapp:latest
+      user: "1000:1000"
       ports:
         - 8080:80
       volumes:
@@ -229,6 +230,7 @@ version: "3"
 services:
   app:
     image: myapp:latest
+    user: "1000:1000"
     wrong: true
 `;
     const id = "umbrel-app";
@@ -250,6 +252,7 @@ version: "3"
 services:
   app:
     image: myapp:test
+    user: "1000:1000"
     volumes:
       - ./data:/app/data
 `;
@@ -272,6 +275,7 @@ version: "3"
 services:
   app:
     image: myapp:latest@sha256:123456
+    user: "1000:1000"
     volumes:
       - ./data:/app/data
 `;
@@ -293,6 +297,7 @@ services:
 version: "3"
 services:
   app:
+    user: "1000:1000"
     environment:
       DEBUG: true
     labels:
@@ -332,6 +337,7 @@ services:
 version: "3"
 services:
   app:
+    user: "1000:1000"
     volumes:
       - \${APP_DATA_DIR}:/app/data
       - \${SOME_OTHER_DIR}/data:/app/other
@@ -355,6 +361,7 @@ services:
 version: "3"
 services:
   app:
+    user: "1000:1000"
     volumes:
       - \${APP_DATA_DIR}/data:/app/data
       - \${SOME_OTHER_DIR}/data:/app/other
@@ -378,6 +385,7 @@ services:
 version: "3"
 services:
   app:
+    user: "1000:1000"
     ports:
       - 8080:80
       - 443:443
@@ -410,6 +418,7 @@ version: "3"
 services:
   app:
     image: teamspeak:3.13.7@sha256:10499180e88f24170812e12b34083332a7573ae35a4becba5d7a85d9761050e5
+    user: "1000:1000"
 `;
     const id = "umbrel-app";
     const files: Entry[] = [];
@@ -425,6 +434,76 @@ services:
         'The image "teamspeak:3.13.7@sha256:10499180e88f24170812e12b34083332a7573ae35a4becba5d7a85d9761050e5" does not support the architectures "arm64" and "amd64". Please make sure that the image supports both architectures.',
       file: `${id}/docker-compose.yml`,
     });
+  });
+
+  it("should return an info message if a root user is being used", async () => {
+    const content = `
+version: "3.7"
+
+services:
+  app:
+    user: "root"
+`;
+    const id = "umbrel-app";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      id: "invalid_container_user",
+      severity: "info",
+      title: `Using unsafe user "root" in service "app"`,
+      message: `The user "root" can lead to security vulnerabilities. If possible please use a non-root user instead.`,
+      file: `${id}/docker-compose.yml`,
+    });
+  });
+
+  it("should return an info message if no user is specified and UID/PUID environment variable is not set", async () => {
+    const content = `
+version: "3.7"
+
+services:
+  app: {}
+`;
+    const id = "umbrel-app";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      id: "invalid_container_user",
+      severity: "info",
+      title: `Potentially using unsafe user in service "app"`,
+      message: `The default container user "root" can lead to security vulnerabilities. If you are using the root user, please try to specify a different user (e.g. "1000:1000") in the compose file or try to set the UID/PUID and GID/PGID environment variables to 1000.`,
+      file: `${id}/docker-compose.yml`,
+    });
+  });
+
+  it("should not return any info message if a non-root user is specified", async () => {
+    const content = `
+version: "3.7"
+
+services:
+  app:
+    user: "1000:1000"
+`;
+    const id = "umbrel-app";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(0);
+  });
+
+  it("should not return any info message if UID/PUID environment variable is set to 1000", async () => {
+    const content = `
+version: "3.7"
+
+services:
+  app:
+    environment:
+      UID: 1000
+`;
+    const id = "umbrel-app";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(0);
   });
 });
 

@@ -26,7 +26,8 @@ export interface LintingResult {
     | "missing_file_or_directory"
     | "empty_app_data_directory"
     | "external_port_mapping"
-    | "invalid_image_architectures";
+    | "invalid_image_architectures"
+    | "invalid_container_user";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -165,8 +166,12 @@ export async function lintDockerComposeYml(
   const rawDockerComposeYmlMocked = await mockVariables(content);
 
   // check if the file is valid yaml
+  let dockerComposeYml;
   let dockerComposeYmlMocked: ComposeSpecification;
   try {
+    dockerComposeYml = YAML.parse(content, {
+      merge: true,
+    });
     dockerComposeYmlMocked = YAML.parse(rawDockerComposeYmlMocked, {
       merge: true,
     });
@@ -210,6 +215,7 @@ export async function lintDockerComposeYml(
   }
 
   const result: LintingResult[] = [];
+  const services = Object.keys(dockerComposeYml.services ?? {});
   const servicesMocked = Object.keys(dockerComposeYmlMocked.services ?? {});
 
   // Check if the image follows the naming convention
@@ -254,16 +260,16 @@ export async function lintDockerComposeYml(
     const extra_hosts = dockerComposeYmlMocked.services?.[service].extra_hosts;
     const properties = [];
     // Nothing to do if it is an string array
-    if (environment && typeof environment === "object") {
+    if (environment && !Array.isArray(environment)) {
       properties.push({
         label: "environment",
         entries: Object.entries(environment),
       });
     }
-    if (labels && typeof labels === "object") {
+    if (labels && !Array.isArray(labels)) {
       properties.push({ label: "labels", entries: Object.entries(labels) });
     }
-    if (extra_hosts && typeof extra_hosts === "object") {
+    if (extra_hosts && !Array.isArray(extra_hosts)) {
       properties.push({
         label: "extra_hosts",
         entries: Object.entries(extra_hosts),
@@ -295,25 +301,6 @@ export async function lintDockerComposeYml(
   // Check if this app puts data directly into the ${APP_DATA_DIR} directory
   // If so, print a warning, because this is not future proof. If the submitter wants to add something
   // later, there is no clear distinction like when using directories.
-  let dockerComposeYml;
-  try {
-    dockerComposeYml = YAML.parse(content, {
-      merge: true,
-    });
-  } catch (e) {
-    // This should never happen, as we already parsed the file before
-    // But better be safe
-    return [
-      {
-        id: "invalid_yaml_syntax",
-        severity: "error",
-        title: "docker-compose.yml is not a valid YAML file",
-        message: String(e),
-        file: `${id}/docker-compose.yml`,
-      },
-    ];
-  }
-  const services = Object.keys(dockerComposeYml.services ?? {});
   for (const service of services) {
     const volumes = dockerComposeYml.services?.[service]?.volumes;
     // if the volumes is an array
@@ -501,6 +488,55 @@ export async function lintDockerComposeYml(
           file: `${id}/docker-compose.yml`,
         });
       }
+    }
+  }
+
+  // Check if the container user is being restricted
+  // We want to have as little user privileges as possible and the default user (root)
+  // should not be used. In case of a breach the attacker would have root access to the host system.
+  for (const service of servicesMocked) {
+    if (service === "app_proxy") {
+      continue;
+    }
+    const user = dockerComposeYmlMocked.services?.[service].user;
+    const environment = dockerComposeYmlMocked.services?.[service].environment;
+    let hasUIDEnv = false;
+    if (environment) {
+      if (Array.isArray(environment)) {
+        if (
+          environment.includes("UID=1000") ||
+          environment.includes("PUID=1000")
+        ) {
+          hasUIDEnv = true;
+        }
+      } else {
+        for (const [key, value] of Object.entries(environment)) {
+          if (key === "UID" || key === "PUID") {
+            if (String(value) === "1000") {
+              hasUIDEnv = true;
+            }
+          }
+        }
+      }
+    }
+    if (user === "root") {
+      result.push({
+        id: "invalid_container_user",
+        propertiesPath: `services.${service}.user`,
+        ...getSourceMapForKey(content, ["services", service, "user"]),
+        severity: "info",
+        title: `Using unsafe user "${user}" in service "${service}"`,
+        message: `The user "${user}" can lead to security vulnerabilities. If possible please use a non-root user instead.`,
+        file: `${id}/docker-compose.yml`,
+      });
+    } else if (!user && !hasUIDEnv) {
+      result.push({
+        id: "invalid_container_user",
+        severity: "info",
+        title: `Potentially using unsafe user in service "${service}"`,
+        message: `The default container user "root" can lead to security vulnerabilities. If you are using the root user, please try to specify a different user (e.g. "1000:1000") in the compose file or try to set the UID/PUID and GID/PGID environment variables to 1000.`,
+        file: `${id}/docker-compose.yml`,
+      });
     }
   }
 
