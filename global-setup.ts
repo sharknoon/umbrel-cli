@@ -3,6 +3,7 @@ import { clone } from "isomorphic-git";
 import http from "isomorphic-git/http/node";
 
 export async function setup() {
+  await fs.rm("tests", { recursive: true, force: true });
   await clone({
     fs,
     http,

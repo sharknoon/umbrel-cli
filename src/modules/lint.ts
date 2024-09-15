@@ -29,7 +29,8 @@ export interface LintingResult {
     | "invalid_image_architectures"
     | "invalid_container_user"
     | "filled_out_release_notes_on_first_submission"
-    | "container_network_mode_host";
+    | "container_network_mode_host"
+    | "invalid_app_proxy_configuration";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -574,6 +575,104 @@ export async function lintDockerComposeYml(
         message: `The host network mode can lead to security vulnerabilities. If possible please use the default bridge network mode and expose the necessary ports.`,
         file: `${id}/docker-compose.yml`,
       });
+    }
+  }
+
+  // Check if the app_proxy is set up correctly
+  const hostnames = new Set<string>();
+  for (const service of services) {
+    if (service === "app_proxy") {
+      continue;
+    }
+    const hostname = dockerComposeYml.services?.[service]?.hostname;
+    if (hostname) {
+      hostnames.add(hostname);
+    }
+    const container_name = dockerComposeYml.services?.[service]?.container_name;
+    if (container_name) {
+      hostnames.add(container_name);
+    }
+  }
+  for (const service of services) {
+    if (service === "app_proxy") {
+      const environment = dockerComposeYml.services?.[service].environment;
+      const environmentVariables = new Map<string, string>();
+      if (Array.isArray(environment)) {
+        for (const env of environment) {
+          const [key, value] = env.split("=");
+          environmentVariables.set(key, value);
+        }
+      } else if (typeof environment === "object") {
+        for (const [key, value] of Object.entries(environment)) {
+          environmentVariables.set(key, String(value));
+        }
+      }
+      // Check the APP_HOST
+      if (!environmentVariables.has("APP_HOST")) {
+        result.push({
+          id: "invalid_app_proxy_configuration",
+          propertiesPath: `services.${service}.environment`,
+          ...getSourceMapForKey(content, ["services", service, "environment"]),
+          severity: "error",
+          title: `Missing APP_HOST environment variable`,
+          message: `The app_proxy container needs to have the APP_HOST environment variable set to the hostname of the app_proxy container ("<app-id>_<web-container-name>_1").`,
+          file: `${id}/docker-compose.yml`,
+        });
+      } else {
+        const appHost = String(environmentVariables.get("APP_HOST"));
+        // Ignore if the APP_HOST is a variable or a hostname that is known
+        if (!appHost.startsWith("$") && !hostnames.has(appHost)) {
+          const [appid, containerName, number] = appHost.split("_");
+          if (
+            appid !== id.toLowerCase() ||
+            !servicesMocked.includes(containerName) ||
+            number !== "1"
+          ) {
+            result.push({
+              id: "invalid_app_proxy_configuration",
+              propertiesPath: `services.${service}.environment`,
+              ...getSourceMapForKey(content, [
+                "services",
+                service,
+                "environment",
+              ]),
+              severity: "warning",
+              title: `Invalid APP_HOST environment variable`,
+              message: `The APP_HOST environment variable must be set to the hostname of the app_proxy container ("<app-id>_<web-container-name>_1").`,
+              file: `${id}/docker-compose.yml`,
+            });
+          }
+        }
+      }
+      // Check the APP_PORT
+      if (!environmentVariables.has("APP_PORT")) {
+        result.push({
+          id: "invalid_app_proxy_configuration",
+          propertiesPath: `services.${service}.environment`,
+          ...getSourceMapForKey(content, ["services", service, "environment"]),
+          severity: "error",
+          title: `Missing APP_PORT environment variable`,
+          message: `The app_proxy container needs to have the APP_PORT environment variable set to the port the ui of the app inside the container is listening on.`,
+          file: `${id}/docker-compose.yml`,
+        });
+      } else if (isNaN(Number(environmentVariables.get("APP_PORT")))) {
+        // Ignore if the APP_PORT is a variable
+        if (!environmentVariables.get("APP_PORT")?.startsWith("$")) {
+          result.push({
+            id: "invalid_app_proxy_configuration",
+            propertiesPath: `services.${service}.environment`,
+            ...getSourceMapForKey(content, [
+              "services",
+              service,
+              "environment",
+            ]),
+            severity: "warning",
+            title: `Invalid APP_PORT environment variable`,
+            message: `The APP_PORT environment variable must be set to the port the ui of the app inside the container is listening on.`,
+            file: `${id}/docker-compose.yml`,
+          });
+        }
+      }
     }
   }
 

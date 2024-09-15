@@ -230,7 +230,7 @@ services:
       - FB_ROOT=/data
       - FB_NOAUTH=true
 `;
-    const id = "umbrel-app";
+    const id = "file-browser";
     const files: Entry[] = [];
     const options = { checkImageArchitectures: true };
     const results = await lintDockerComposeYml(content, id, files, options);
@@ -549,7 +549,7 @@ services:
 version: "3.7"
 
 services:
-  app_proxy:
+  app:
     user: "1000:1000"
     network_mode: host
 
@@ -564,7 +564,7 @@ services:
     expect(results[0]).toMatchObject<LintingResult>({
       id: "container_network_mode_host",
       severity: "info",
-      title: 'Service "app_proxy" uses host network mode',
+      title: 'Service "app" uses host network mode',
       message:
         "The host network mode can lead to security vulnerabilities. If possible please use the default bridge network mode and expose the necessary ports.",
       file: `${id}/docker-compose.yml`,
@@ -584,7 +584,7 @@ services:
 version: "3.7"
 
 services:
-  app_proxy:
+  app:
     user: "1000:1000"
 
   server:
@@ -595,6 +595,57 @@ services:
     const files: Entry[] = [];
     const results = await lintDockerComposeYml(content, id, files);
     expect(results).toHaveLength(0);
+  });
+
+  it("should return an error for invalid APP_HOST", async () => {
+    const content = `
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: invalid
+      APP_PORT: 80
+`;
+    const id = "umbrel-app";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      id: "invalid_app_proxy_configuration",
+      severity: "error",
+      title: "Invalid APP_HOST environment variable",
+      message:
+        'The APP_HOST environment variable must be set to the hostname of the app_proxy container ("<app-id>_<web-container-name>_1").',
+      file: `${id}/docker-compose.yml`,
+    });
+  });
+
+  it("should return an error for invalid APP_PORT", async () => {
+    const content = `
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: file-browser_server_1
+      APP_PORT: invalid
+
+  server:
+    user: "1000:1000"
+`;
+    const id = "file-browser";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      id: "invalid_app_proxy_configuration",
+      severity: "error",
+      title: "Invalid APP_PORT environment variable",
+      message:
+        "The APP_PORT environment variable must be set to the port the ui of the app inside the container is listening on.",
+      file: `${id}/docker-compose.yml`,
+    });
   });
 });
 
