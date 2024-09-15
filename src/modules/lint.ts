@@ -29,6 +29,7 @@ export interface LintingResult {
     | "invalid_image_architectures"
     | "invalid_container_user"
     | "filled_out_release_notes_on_first_submission"
+    | "filled_out_icon_or_gallery_on_first_submission"
     | "container_network_mode_host"
     | "invalid_app_proxy_configuration"
     | "invalid_restart_policy";
@@ -169,6 +170,26 @@ export async function lintUmbrelAppYml(
       message: `The "releaseNotes" field must be empty for new app submissions as it is being displayed to the user only in case of an update.`,
       file: `${id}/umbrel-app.yml`,
     });
+  }
+
+  // If this is a new app submission, make sure that the icon and the gallery are empty
+  if (options.isNewAppSubmission) {
+    const icon = rawUmbrelAppYml.icon;
+    const gallery = rawUmbrelAppYml.gallery;
+    if (
+      (icon && String(icon).length > 0) ||
+      (Array.isArray(gallery) && gallery.length > 0)
+    ) {
+      result.push({
+        id: "filled_out_icon_or_gallery_on_first_submission",
+        severity: "warning",
+        propertiesPath: icon ? "icon" : "gallery",
+        ...getSourceMapForKey(content, icon ? ["icon"] : ["gallery"]),
+        title: `"icon" and "gallery" needs to be empty for new app submissions`,
+        message: `The "icon" and "gallery" fields must be empty for new app submissions as it is being created by the Umbrel team.`,
+        file: `${id}/umbrel-app.yml`,
+      });
+    }
   }
 
   return result;

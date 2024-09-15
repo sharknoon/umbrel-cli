@@ -204,6 +204,45 @@ submission: "https://github.com/user/repo/pull/123"
       title: '"releaseNotes" needs to be empty for new app submissions',
     });
   });
+
+  it("should return an error for filled out icon or gallery on first submission", async () => {
+    const content = `
+manifestVersion: 1
+id: "sparkles"
+name: "Sparkles"
+tagline: "The best app ever"
+category: "files"
+icon: "https://some-link.com/icon.png"
+version: "1.0.0"
+port: 3000
+description: "This is the best app ever"
+website: "https://sparkles.app"
+support: "https://sparkles.app/support"
+gallery: []
+releaseNotes: ""
+dependencies: []
+path: ""
+developer: "Sparkles Inc."
+submitter: "John Doe"
+repo: "http://github.com/sparkles/sparkles"
+submission: "https://github.com/user/repo/pull/123"
+    `;
+    const id = "umbrel-app";
+    const options = {
+      isNewAppSubmission: true,
+      pullRequestUrl: "https://github.com/user/repo/pull/123",
+    };
+    const results = await lintUmbrelAppYml(content, id, options);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      file: `${id}/umbrel-app.yml`,
+      id: "filled_out_icon_or_gallery_on_first_submission",
+      message:
+        'The "icon" and "gallery" fields must be empty for new app submissions as it is being created by the Umbrel team.',
+      severity: "warning",
+      title: '"icon" and "gallery" needs to be empty for new app submissions',
+    });
+  });
 });
 
 describe("lintDockerComposeYml", () => {
