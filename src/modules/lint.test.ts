@@ -597,7 +597,7 @@ services:
     expect(results).toHaveLength(0);
   });
 
-  it("should return an error for invalid APP_HOST", async () => {
+  it("should return an warning for invalid APP_HOST", async () => {
     const content = `
 version: "3.7"
 
@@ -613,15 +613,15 @@ services:
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject<LintingResult>({
       id: "invalid_app_proxy_configuration",
-      severity: "error",
+      severity: "warning",
       title: "Invalid APP_HOST environment variable",
       message:
-        'The APP_HOST environment variable must be set to the hostname of the app_proxy container ("<app-id>_<web-container-name>_1").',
+        'The APP_HOST environment variable must be set to the hostname of the app_proxy container (e.g. "<app-id>_<web-container-name>_1").',
       file: `${id}/docker-compose.yml`,
     });
   });
 
-  it("should return an error for invalid APP_PORT", async () => {
+  it("should return a warning for invalid APP_PORT", async () => {
     const content = `
 version: "3.7"
 
@@ -640,10 +640,38 @@ services:
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject<LintingResult>({
       id: "invalid_app_proxy_configuration",
-      severity: "error",
+      severity: "warning",
       title: "Invalid APP_PORT environment variable",
       message:
         "The APP_PORT environment variable must be set to the port the ui of the app inside the container is listening on.",
+      file: `${id}/docker-compose.yml`,
+    });
+  });
+
+  it("should return an error for invalid restart policy", async () => {
+    const content = `
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: file-browser_server_1
+      APP_PORT: 80
+
+  server:
+    user: "1000:1000"
+    restart: always
+`;
+    const id = "file-browser";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      id: "invalid_restart_policy",
+      severity: "warning",
+      title: "Invalid restart policy",
+      message:
+        'The restart policy of the container "server" should be set to "on-failure".',
       file: `${id}/docker-compose.yml`,
     });
   });

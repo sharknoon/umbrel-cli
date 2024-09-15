@@ -30,7 +30,8 @@ export interface LintingResult {
     | "invalid_container_user"
     | "filled_out_release_notes_on_first_submission"
     | "container_network_mode_host"
-    | "invalid_app_proxy_configuration";
+    | "invalid_app_proxy_configuration"
+    | "invalid_restart_policy";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -615,7 +616,7 @@ export async function lintDockerComposeYml(
           ...getSourceMapForKey(content, ["services", service, "environment"]),
           severity: "error",
           title: `Missing APP_HOST environment variable`,
-          message: `The app_proxy container needs to have the APP_HOST environment variable set to the hostname of the app_proxy container ("<app-id>_<web-container-name>_1").`,
+          message: `The app_proxy container needs to have the APP_HOST environment variable set to the hostname of the app_proxy container (e.g. "<app-id>_<web-container-name>_1").`,
           file: `${id}/docker-compose.yml`,
         });
       } else {
@@ -638,7 +639,7 @@ export async function lintDockerComposeYml(
               ]),
               severity: "warning",
               title: `Invalid APP_HOST environment variable`,
-              message: `The APP_HOST environment variable must be set to the hostname of the app_proxy container ("<app-id>_<web-container-name>_1").`,
+              message: `The APP_HOST environment variable must be set to the hostname of the app_proxy container (e.g. "<app-id>_<web-container-name>_1").`,
               file: `${id}/docker-compose.yml`,
             });
           }
@@ -673,6 +674,25 @@ export async function lintDockerComposeYml(
           });
         }
       }
+    }
+  }
+
+  // Check if the restart policy is set to on-failure
+  for (const service of servicesMocked) {
+    if (service === "app_proxy") {
+      continue;
+    }
+    const restart = dockerComposeYmlMocked.services?.[service].restart;
+    if (restart && restart !== "on-failure") {
+      result.push({
+        id: "invalid_restart_policy",
+        propertiesPath: `services.${service}.restart`,
+        ...getSourceMapForKey(content, ["services", service, "restart"]),
+        severity: "warning",
+        title: `Invalid restart policy`,
+        message: `The restart policy of the container "${service}" should be set to "on-failure".`,
+        file: `${id}/docker-compose.yml`,
+      });
     }
   }
 
