@@ -25,8 +25,8 @@ describe("getUmbrelAppYmls", () => {
     const result = await getUmbrelAppYmls(cwd);
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
-    expect(result[0]).toHaveProperty("name");
-    expect(result[0]).toHaveProperty("version");
+    expect(result[0]).toContain("name");
+    expect(result[0]).toContain("version");
   });
 
   it("should return an empty array when no 'umbrel-app.yml' files exist in the directory", async () => {

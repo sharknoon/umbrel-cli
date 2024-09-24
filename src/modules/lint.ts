@@ -32,7 +32,8 @@ export interface LintingResult {
     | "filled_out_icon_or_gallery_on_first_submission"
     | "container_network_mode_host"
     | "invalid_app_proxy_configuration"
-    | "invalid_restart_policy";
+    | "invalid_restart_policy"
+    | "duplicate_ui_port";
   propertiesPath?: string;
   line?: { start: number; end: number }; // Starting at 1
   column?: { start: number; end: number }; // Starting at 1
@@ -95,6 +96,7 @@ export async function lintUmbrelAppStoreYml(
 export interface LintUmbrelAppYmlOptions {
   isNewAppSubmission?: boolean;
   pullRequestUrl?: string;
+  allUmbrelAppYmlContents?: string[];
 }
 
 export async function lintUmbrelAppYml(
@@ -187,6 +189,52 @@ export async function lintUmbrelAppYml(
         ...getSourceMapForKey(content, icon ? ["icon"] : ["gallery"]),
         title: `"icon" and "gallery" needs to be empty for new app submissions`,
         message: `The "icon" and "gallery" fields must be empty for new app submissions as it is being created by the Umbrel team.`,
+        file: `${id}/umbrel-app.yml`,
+      });
+    }
+  }
+
+  // Check if the port is already used by another app
+  if (options.allUmbrelAppYmlContents) {
+    // build the map of used ports
+    const ports = new Map<number, string>();
+    for (const content of options.allUmbrelAppYmlContents) {
+      // check if the file is valid yaml
+      let appYml;
+      try {
+        appYml = YAML.parse(content);
+      } catch {
+        continue;
+      }
+      // Check for the necessary fields
+      if (typeof appYml !== "object" || appYml === null) {
+        continue;
+      }
+      if (!("port" in appYml) || typeof appYml.port !== "number") {
+        continue;
+      }
+      if (!("name" in appYml) || typeof appYml.name !== "string") {
+        continue;
+      }
+      if (!("id" in appYml) || typeof appYml.id !== "string") {
+        continue;
+      }
+      // Ignore the current app
+      if (appYml.id === id) {
+        continue;
+      }
+      ports.set(appYml.port, `${appYml.name} (${appYml.id})`);
+    }
+    // Check if the current port is already used
+    if (ports.has(rawUmbrelAppYml.port)) {
+      const existintAppName = ports.get(rawUmbrelAppYml.port);
+      result.push({
+        id: "duplicate_ui_port",
+        severity: "error",
+        propertiesPath: "port",
+        ...getSourceMapForKey(content, ["port"]),
+        title: `Port ${rawUmbrelAppYml.port} is already used by ${existintAppName}`,
+        message: `Each app must use a unique port`,
         file: `${id}/umbrel-app.yml`,
       });
     }

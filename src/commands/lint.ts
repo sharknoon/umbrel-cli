@@ -38,10 +38,12 @@ export async function lint(
     noLintingErrors = (await readmeMd(cwd)) && noLintingErrors;
   }
   const appIds = appId ? [appId] : await getAllAppIds(cwd);
+  const umbrelAppYmls = await getUmbrelAppYmls(cwd);
   for (const id of appIds) {
     const files = await readDirRecursive(path.resolve(cwd, id));
     files.forEach((file) => (file.path = `${id}/${file.path}`));
-    noLintingErrors = (await umbrelAppYml(cwd, id)) && noLintingErrors;
+    noLintingErrors =
+      (await umbrelAppYml(cwd, id, umbrelAppYmls)) && noLintingErrors;
     // we restrict the use of checkImageArchitectures to the case where only one app is being linted
     // otherwise we would run into GitHub rate limits
     // umbrel lint => checkImageArchitectures = false
@@ -52,8 +54,6 @@ export async function lint(
       })) && noLintingErrors;
     noLintingErrors = lintDirectoryStructure(files) && noLintingErrors;
   }
-  noLintingErrors =
-    (await lintUmbrelAppYmlDuplications(cwd, appId)) && noLintingErrors;
   console.log(
     noLintingErrors
       ? pc.green("No linting errors found 🎉")
@@ -102,7 +102,11 @@ async function readmeMd(cwd: string): Promise<boolean> {
   return true;
 }
 
-async function umbrelAppYml(cwd: string, id: string): Promise<boolean> {
+async function umbrelAppYml(
+  cwd: string,
+  id: string,
+  allUmbrelAppYmlContents: string[],
+): Promise<boolean> {
   console.log(`Checking ${path.join(id, "umbrel-app.yml")}`);
   const umbrelAppYmlPath = path.resolve(cwd, id, "umbrel-app.yml");
   // Check if the file exists
@@ -117,46 +121,13 @@ async function umbrelAppYml(cwd: string, id: string): Promise<boolean> {
   const lintingResults = await lintUmbrelAppYml(
     await fs.readFile(umbrelAppYmlPath, "utf-8"),
     id,
+    { allUmbrelAppYmlContents },
   );
   for (const result of lintingResults) {
     printLintingError(result.title, result.message, result.severity);
   }
 
   return lintingResults.filter((r) => r.severity === "error").length === 0;
-}
-
-async function lintUmbrelAppYmlDuplications(
-  cwd: string,
-  appId?: string,
-): Promise<boolean> {
-  let noLintingErrors = true;
-  const appYmls = await getUmbrelAppYmls(cwd);
-  // Check if a port is used by multiple apps
-  const ports = new Map<number, string>();
-  for (const appYml of appYmls) {
-    if (typeof appYml !== "object" || appYml === null) {
-      continue;
-    }
-    if (!("port" in appYml) || typeof appYml.port !== "number") {
-      continue;
-    }
-    if (!("name" in appYml) || typeof appYml.name !== "string") {
-      continue;
-    }
-    if (!("id" in appYml) || typeof appYml.id !== "string") {
-      continue;
-    }
-    if (ports.has(appYml.port) && (!appId || appId === appYml.id)) {
-      noLintingErrors = false;
-      const existintAppName = ports.get(appYml.port);
-      printLintingError(
-        `Port ${appYml.port} is already used by ${existintAppName}`,
-        `Each app must use a unique port`,
-      );
-    }
-    ports.set(appYml.port, appYml.name);
-  }
-  return noLintingErrors;
 }
 
 function lintDirectoryStructure(files: Entry[]): boolean {

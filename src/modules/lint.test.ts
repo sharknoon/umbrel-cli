@@ -80,7 +80,7 @@ submitter: "John Doe"
 repo: "http://github.com/sparkles/sparkles"
 submission: "https://github.com/user/repo/pull/123"
     `;
-    const id = "umbrel-app";
+    const id = "sparkles";
     const options = {
       isNewAppSubmission: true,
       pullRequestUrl: "https://github.com/user/repo/pull/123",
@@ -110,7 +110,7 @@ submitter: "John Doe"
 repo: "http://github.com/sparkles/sparkles"
 submission: "https://github.com/user/repo/pull/123"
     `;
-    const id = "umbrel-app";
+    const id = "sparkles";
     const results = await lintUmbrelAppYml(content, id);
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject<LintingResult>({
@@ -118,7 +118,7 @@ submission: "https://github.com/user/repo/pull/123"
       severity: "error",
       title: "umbrel-app.yml is not a valid YAML file",
       message: expect.any(String),
-      file: "umbrel-app/umbrel-app.yml",
+      file: "sparkles/umbrel-app.yml",
     });
   });
 
@@ -143,7 +143,7 @@ submitter: "John Doe"
 repo: "http://github.com/sparkles/sparkles"
 submission: "blaa"
     `;
-    const id = "umbrel-app";
+    const id = "sparkles";
     const options = {
       isNewAppSubmission: true,
       pullRequestUrl: "https://github.com/user/repo/pull/456",
@@ -151,14 +151,14 @@ submission: "blaa"
     const results = await lintUmbrelAppYml(content, id, options);
     expect(results).toHaveLength(2);
     expect(results[0]).toMatchObject<LintingResult>({
-      file: "umbrel-app/umbrel-app.yml",
+      file: "sparkles/umbrel-app.yml",
       id: "invalid_string",
       message: "Invalid url",
       severity: "error",
       title: "submission",
     });
     expect(results[1]).toMatchObject<LintingResult>({
-      file: "umbrel-app/umbrel-app.yml",
+      file: "sparkles/umbrel-app.yml",
       id: "invalid_submission_field",
       message:
         "The submission field must be set to the URL of this pull request: https://github.com/user/repo/pull/456",
@@ -188,7 +188,7 @@ submitter: "John Doe"
 repo: "http://github.com/sparkles/sparkles"
 submission: "https://github.com/user/repo/pull/123"
     `;
-    const id = "umbrel-app";
+    const id = "sparkles";
     const options = {
       isNewAppSubmission: true,
       pullRequestUrl: "https://github.com/user/repo/pull/123",
@@ -196,7 +196,7 @@ submission: "https://github.com/user/repo/pull/123"
     const results = await lintUmbrelAppYml(content, id, options);
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject<LintingResult>({
-      file: `${id}/umbrel-app.yml`,
+      file: `sparkles/umbrel-app.yml`,
       id: "filled_out_release_notes_on_first_submission",
       message:
         'The "releaseNotes" field must be empty for new app submissions as it is being displayed to the user only in case of an update.',
@@ -227,7 +227,7 @@ submitter: "John Doe"
 repo: "http://github.com/sparkles/sparkles"
 submission: "https://github.com/user/repo/pull/123"
     `;
-    const id = "umbrel-app";
+    const id = "sparkles";
     const options = {
       isNewAppSubmission: true,
       pullRequestUrl: "https://github.com/user/repo/pull/123",
@@ -235,12 +235,71 @@ submission: "https://github.com/user/repo/pull/123"
     const results = await lintUmbrelAppYml(content, id, options);
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject<LintingResult>({
-      file: `${id}/umbrel-app.yml`,
+      file: `sparkles/umbrel-app.yml`,
       id: "filled_out_icon_or_gallery_on_first_submission",
       message:
         'The "icon" and "gallery" fields must be empty for new app submissions as it is being created by the Umbrel team.',
       severity: "warning",
       title: '"icon" and "gallery" needs to be empty for new app submissions',
+    });
+  });
+
+  it("should return an error for duplicate ports", async () => {
+    const content = `
+manifestVersion: 1
+id: "sparkles"
+name: "Sparkles"
+tagline: "The best app ever"
+category: "files"
+version: "1.0.0"
+port: 3000
+description: "This is the best app ever"
+website: "https://sparkles.app"
+support: "https://sparkles.app/support"
+gallery: []
+releaseNotes: ""
+dependencies: []
+path: ""
+developer: "Sparkles Inc."
+submitter: "John Doe"
+repo: "http://github.com/sparkles/sparkles"
+submission: "https://github.com/user/repo/pull/123"
+    `;
+    const id = "sparkles";
+    const options = {
+      isNewAppSubmission: true,
+      pullRequestUrl: "https://github.com/user/repo/pull/123",
+      allUmbrelAppYmlContents: [
+        `
+manifestVersion: 1
+id: "sparkles2"
+name: "Sparkles 2"
+tagline: "The best app ever again"
+category: "files"
+version: "1.0.0"
+port: 3000
+description: "This is the best app ever again"
+website: "https://sparkles2.app"
+support: "https://sparkles2.app/support"
+gallery: []
+releaseNotes: ""
+dependencies: []
+path: ""
+developer: "Sparkles Inc."
+submitter: "John Doe"
+repo: "http://github.com/sparkles/sparkles2"
+submission: "https://github.com/user/repo/pull/123"
+    `,
+      ],
+    };
+    const results = await lintUmbrelAppYml(content, id, options);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      file: `sparkles/umbrel-app.yml`,
+      id: "duplicate_ui_port",
+      message: "Each app must use a unique port",
+      severity: "error",
+      title: "Port 3000 is already used by Sparkles 2 (sparkles2)",
     });
   });
 });

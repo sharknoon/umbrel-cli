@@ -9,7 +9,7 @@ export async function getValidatedUmbrelAppYmls(cwd: string) {
   const umbrelAppYmls = [];
   for (const rawUmbrelAppYml of rawUmbrelAppYmls) {
     const schema = await umbrelAppYmlSchema();
-    const result = await schema.safeParseAsync(rawUmbrelAppYml);
+    const result = await schema.safeParseAsync(YAML.parse(rawUmbrelAppYml));
     if (result.success) {
       umbrelAppYmls.push(result.data);
     }
@@ -17,7 +17,7 @@ export async function getValidatedUmbrelAppYmls(cwd: string) {
   return umbrelAppYmls;
 }
 
-export async function getUmbrelAppYmls(cwd: string) {
+export async function getUmbrelAppYmls(cwd: string): Promise<string[]> {
   if (!(await isAppStoreDirectory(cwd))) {
     return [];
   }
@@ -25,13 +25,13 @@ export async function getUmbrelAppYmls(cwd: string) {
     withFileTypes: true,
     recursive: true,
   });
-  const rawUmbrelAppYmls: unknown[] = [];
+  const rawUmbrelAppYmls: string[] = [];
   for (const appId of appIds) {
     if (appId.name !== "umbrel-app.yml") {
       continue;
     }
     const file = path.resolve(appId.path, appId.name);
-    const yml = YAML.parse(await fs.readFile(file, "utf-8"));
+    const yml = await fs.readFile(file, "utf-8");
     rawUmbrelAppYmls.push(yml);
   }
   return rawUmbrelAppYmls;
