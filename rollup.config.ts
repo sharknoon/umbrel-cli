@@ -44,7 +44,7 @@ export default defineConfig([
     ],
   },
   {
-    input: "dist/dts/src/lib.d.ts",
+    input: "dist/dts/lib.d.ts",
     output: [
       {
         file: "dist/lib.d.ts",

@@ -11,6 +11,7 @@
   "files": [
     "./dist"
   ],
+  "types": "dist/lib.d.ts",
   "scripts": {
     "dev": "npm run build && node dist/cli.js",
     "build": "rollup --config rollup.config.ts --configPlugin typescript",
