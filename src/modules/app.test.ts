@@ -18,7 +18,7 @@ describe("getValidatedUmbrelAppYml", () => {
     const cwd = "tests/umbrel-apps";
     const appId = "invalid-app";
 
-    expect(
+    await expect(
       async () => await getValidatedUmbrelAppYml(cwd, appId),
     ).rejects.toThrowError(/no such file/);
   });

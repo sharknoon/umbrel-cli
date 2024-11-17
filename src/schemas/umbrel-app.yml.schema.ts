@@ -8,9 +8,12 @@ export default async function umbrelAppYmlSchema() {
       // https://github.com/colinhacks/zod/pull/2980#issuecomment-2073499456
       manifestVersion: z
         .number()
-        .refine((version) => version === 1 || version === 1.1, {
-          message: "The manifest version can either be '1' or '1.1'",
-        }),
+        .refine(
+          (version) => version === 1 || version === 1.1 || version === 1.2,
+          {
+            message: "The manifest version can either be '1' or '1.1'",
+          },
+        ),
       id: z.string().refine((id) => !id.startsWith("umbrel-app-store"), {
         message:
           "The id of the app can't start with 'umbrel-app-store' as it is the id of the app repository",
@@ -43,7 +46,7 @@ export default async function umbrelAppYmlSchema() {
         "developer",
       ]),
       version: z.string().min(1),
-      port: z.number().min(0).max(65535),
+      port: z.number().int().min(0).max(65535),
       description: z.string().min(1).max(5000),
       developer: z.preprocess((val) => {
         if (val === undefined || val === null) {
@@ -59,21 +62,22 @@ export default async function umbrelAppYmlSchema() {
         return String(val);
       }, z.string().min(1).max(50)),
       submission: z.string().url(),
-      repo: z.string().url().or(z.literal("")),
+      repo: z.union([z.string().url(), z.literal("")]).optional(),
       support: z.string().url(),
       gallery: z.string().array(),
-      releaseNotes: z.string().min(0).max(5000),
-      dependencies: z.string().array(),
+      releaseNotes: z.string().min(0).max(5000).optional(),
+      dependencies: z.string().array().optional(),
       permissions: z.enum(["STORAGE_DOWNLOADS"]).array().optional(),
       path: z
         .string()
-        .refine((path) => isValidUrl(`https://example.com${path}`)),
+        .refine((path) => isValidUrl(`https://example.com${path}`))
+        .optional(),
       defaultUsername: z.string().optional().or(z.literal("")),
       defaultPassword: z.string().optional().or(z.literal("")),
       deterministicPassword: z.boolean().optional(),
       optimizedForUmbrelHome: z.boolean().optional(),
       torOnly: z.boolean().optional(),
-      installSize: z.number().min(0).optional(),
+      installSize: z.number().int().min(0).optional(),
       widgets: z.any().array().optional(), // TODO: Define this type
       defaultShell: z.string().optional(),
     })

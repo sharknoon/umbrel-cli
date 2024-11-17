@@ -63,8 +63,8 @@ describe("Image.fromString(image)", () => {
   it("should throw an error for invalid image format", async () => {
     const image =
       "ghcr.io/immich-app/immich-server:v1.105.1@sha256658b40420d7a39d6eb34c797cec8d36ff315f5adb168301aaf27dc4eafc8e228";
-    expect(async () => await Image.fromString(image)).rejects.toThrowError(
-      `Invalid image format: ${image}`,
-    );
+    await expect(
+      async () => await Image.fromString(image),
+    ).rejects.toThrowError(`Invalid image format: ${image}`);
   });
 });

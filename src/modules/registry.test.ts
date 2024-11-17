@@ -45,7 +45,7 @@ describe("getAuthInfo", () => {
   });
 
   it("should throw for an invalid registry host", async () => {
-    expect(
+    await expect(
       getAuthInfo(
         new Image({ host: "invalid.registry.com", path: "something" }),
       ),
