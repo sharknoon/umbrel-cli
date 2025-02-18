@@ -214,45 +214,45 @@ export async function test(
         isAlreadyInstalled = true;
       }
 
-      // If necessary, uninstall the app
+      // If already installed, udpate the app
       if (isAlreadyInstalled) {
-        const reinstall = await confirm({
+        const update = await confirm({
           message: pc.yellow(
-            `⚠️ The app ${pc.bold(appId)} is already installed on your Umbrel. Do you want to reinstall it?`,
+            `⚠️ The app ${pc.bold(appId)} is already installed on your Umbrel. Do you want to update it?`,
           ),
           initialValue: false,
         });
-        if (isCancel(reinstall) || !reinstall) {
+        if (isCancel(update) || !update) {
           cancel(MESSAGE_ABORTED);
           await exit();
           return;
         }
-        const uninstallResult = await execViaSSH(
+        const updateResult = await execViaSSH(
           ssh,
-          `umbreld client apps.uninstall.mutate --appId ${appId}`,
+          `umbreld client apps.update.mutate --appId ${appId}`,
         );
-        if (uninstallResult.stdout.includes("false")) {
+        if (updateResult.stdout.includes("false")) {
           log.error(
             pc.red(
-              `🚨 Error uninstalling the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}`,
+              `🚨 Error updating the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}`,
             ),
           );
           return;
         }
-      }
-
-      // Install the app
-      const installResult = await execViaSSH(
-        ssh,
-        `umbreld client apps.install.mutate --appId ${appId}`,
-      );
-      if (installResult.stdout.includes("false")) {
-        log.error(
-          pc.red(
-            `🚨 Error installing the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}.`,
-          ),
+      } else {
+        // Install the app
+        const installResult = await execViaSSH(
+          ssh,
+          `umbreld client apps.install.mutate --appId ${appId}`,
         );
-        return;
+        if (installResult.stdout.includes("false")) {
+          log.error(
+            pc.red(
+              `🚨 Error installing the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}.`,
+            ),
+          );
+          return;
+        }
       }
     } finally {
       ssh.end();
