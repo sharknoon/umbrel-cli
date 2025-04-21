@@ -66,12 +66,11 @@ export default async function umbrelAppYmlSchema() {
       support: z.string().url(),
       gallery: z.string().array(),
       releaseNotes: z.string().min(0).max(5000).optional(),
-      dependencies: z.string().array().optional(),
+      dependencies: z.string().array(),
       permissions: z.enum(["STORAGE_DOWNLOADS"]).array().optional(),
       path: z
         .string()
-        .refine((path) => isValidUrl(`https://example.com${path}`))
-        .optional(),
+        .refine((path) => isValidUrl(`https://example.com${path}`)),
       defaultUsername: z.string().optional().or(z.literal("")),
       defaultPassword: z.string().optional().or(z.literal("")),
       deterministicPassword: z.boolean().optional(),

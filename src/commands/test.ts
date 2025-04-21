@@ -190,6 +190,43 @@ export async function test(
         filter: (p) => !path.basename(p).startsWith("."),
       });
       s.stop(pc.cyan(`📦 Copying ${pc.bold(appId)} to ${pc.bold(appDir)} ✔️`));
+
+      // If there are any scripts, make them executable
+      s.start(pc.cyan(`🔧 Making scripts in ${pc.bold(appDir)} executable...`));
+      const executableFiles: string[] = [];
+      async function makeFilesExecutable(dir: string) {
+        const files = await sftp.list(dir);
+        for (const file of files) {
+          switch (file.type) {
+            case "d":
+              // If the file is a directory, recursively call the function
+              await makeFilesExecutable(path.posix.join(dir, file.name));
+              break;
+            case "-":
+              // If the file is not a directory and not a link, check if it is a script
+              if (file.name.endsWith(".sh") || dir.includes("hooks")) {
+                executableFiles.push(path.posix.join(dir, file.name));
+                await sftp.chmod(path.posix.join(dir, file.name), "755");
+              }
+              break;
+          }
+        }
+      }
+      await makeFilesExecutable(appDir);
+      s.stop(pc.cyan(`🔧 Making scripts in ${pc.bold(appDir)} executable ✔️`));
+      if (executableFiles.length > 0) {
+        log.info(
+          pc.cyan(
+            `ℹ️ The following files were made executable: ${pc.bold(
+              executableFiles
+                .map((p) => path.posix.relative(appDir, p))
+                .join(", "),
+            )}`,
+          ),
+        );
+      } else {
+        log.info(pc.cyan(`ℹ️ No scripts found to make executable`));
+      }
     } finally {
       await sftp.end();
     }
