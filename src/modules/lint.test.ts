@@ -41,18 +41,18 @@ id: "umbrel-app-store-sparkles"
     const results = await lintUmbrelAppStoreYml(content);
     expect(results).toHaveLength(2);
     expect(results[0]).toMatchObject<LintingResult>({
-      id: "invalid_type",
-      severity: "error",
-      title: "name",
-      message: 'The "name" key is required',
-      file: "umbrel-app-store.yml",
-    });
-    expect(results[1]).toMatchObject<LintingResult>({
       id: "custom",
       severity: "error",
       title: "id",
       message:
         "The id of the app can't start with 'umbrel-app-store' as it is the id of the official Umbrel App Store.",
+      file: "umbrel-app-store.yml",
+    });
+    expect(results[1]).toMatchObject<LintingResult>({
+      id: "invalid_type",
+      severity: "error",
+      title: "name",
+      message: 'The "name" key is required',
       file: "umbrel-app-store.yml",
     });
   });
@@ -152,8 +152,8 @@ submission: "blaa"
     expect(results).toHaveLength(2);
     expect(results[0]).toMatchObject<LintingResult>({
       file: "sparkles/umbrel-app.yml",
-      id: "invalid_string",
-      message: "Invalid url",
+      id: "invalid_format",
+      message: "Invalid URL",
       severity: "error",
       title: "submission",
     });

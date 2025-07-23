@@ -8,11 +8,11 @@ export default async function umbrelAppStoreYmlSchema() {
       .min(1)
       .max(50)
       .refine((id) => !id.startsWith("umbrel-app-store"), {
-        message:
+        error:
           "The id of the app can't start with 'umbrel-app-store' as it is the id of the official Umbrel App Store.",
       })
       .refine((id) => /^[a-z]+(?:-[a-z]+)*$/.test(id), {
-        message:
+        error:
           "The id of the app should contain only alphabets ('a' to 'z') and dashes ('-').",
       }),
     name: z.string().min(1).max(50),

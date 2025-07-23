@@ -11,11 +11,11 @@ export default async function umbrelAppYmlSchema() {
         .refine(
           (version) => version === 1 || version === 1.1 || version === 1.2,
           {
-            message: "The manifest version can either be '1' or '1.1'",
+            error: "The manifest version can either be '1' or '1.1'",
           },
         ),
       id: z.string().refine((id) => !id.startsWith("umbrel-app-store"), {
-        message:
+        error:
           "The id of the app can't start with 'umbrel-app-store' as it is the id of the app repository",
       }), // TODO also validate that the id doesn't start with the id of the custom app repository (if used)
       disabled: z.boolean().optional(),
@@ -30,7 +30,7 @@ export default async function umbrelAppYmlSchema() {
             // Check if the taglines do not end with a period (except for those with multiple periods in it)
             !(tagline.endsWith(".") && tagline.split(".").length === 2),
           {
-            message: "Taglines should not end with a period",
+            error: "Taglines should not end with a period",
           },
         ),
       icon: z.string().optional(),
@@ -81,6 +81,6 @@ export default async function umbrelAppYmlSchema() {
       defaultShell: z.string().optional(),
     })
     .refine((data) => !data.dependencies?.includes(data.id), {
-      message: "Dependencies can't include its own app id",
+      error: "Dependencies can't include its own app id",
     });
 }

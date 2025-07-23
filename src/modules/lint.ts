@@ -8,7 +8,6 @@ import { DefinedError } from "ajv";
 import addFormats from "ajv-formats";
 import dockerComposeYmlSchema from "../schemas/docker-compose.yml.schema.json";
 import umbrelAppYmlSchema from "../schemas/umbrel-app.yml.schema";
-import { ZodIssueCode } from "zod";
 import { getSourceMapForKey } from "../utils/yaml";
 import { getArchitectures } from "./registry";
 import { Image } from "./image";
@@ -16,7 +15,7 @@ import { z } from "zod";
 
 export interface LintingResult {
   id:
-    | ZodIssueCode
+    | z.core.$ZodIssueCode
     | DefinedError["keyword"]
     | "invalid_yaml_syntax"
     | "invalid_docker_image_name"
@@ -43,16 +42,16 @@ export interface LintingResult {
   file: string;
 }
 
-const customErrorMap: z.ZodErrorMap = (issue, ctx) => {
-  if (issue.code === z.ZodIssueCode.invalid_type) {
-    if (issue.received === "undefined") {
-      return { message: `The "${issue.path.join(".")}" key is required` };
-    }
+const customError: z.core.$ZodErrorMap = (issue) => {
+  if (issue.code === "invalid_type" && issue.input === undefined) {
+    return {
+      message: `The "${issue.path?.join(".") ?? ""}" key is required`,
+    };
   }
-  return { message: ctx.defaultError };
+  return undefined;
 };
 
-z.setErrorMap(customErrorMap);
+z.config({ customError });
 
 export async function lintUmbrelAppStoreYml(
   content: string,
