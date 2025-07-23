@@ -11,7 +11,6 @@ import { getUmbrelAppYml } from "../modules/app";
 import {
   cancel,
   group,
-  select,
   text,
   password as passwordPrompt,
   log,
@@ -20,10 +19,10 @@ import {
   spinner,
   intro,
   outro,
-  note,
 } from "@clack/prompts";
 import { exec as execCallback } from "node:child_process";
 import util from "node:util";
+import fs from "node:fs";
 
 const exec = util.promisify(execCallback);
 
@@ -74,19 +73,6 @@ export async function test(
           return Promise.resolve(appId);
         }
       },
-      environment: () =>
-        select({
-          message: "Where does your umbrelOS run?",
-          initialValue: "prod",
-          options: [
-            {
-              value: "prod",
-              label:
-                "Umbrel Home, Raspberry Pi, any x86 system, Proxmox, etc...",
-            },
-            { value: "dev", label: "Multipass Development VM" },
-          ],
-        }),
     },
     {
       // On Cancel callback that wraps the group
@@ -99,268 +85,74 @@ export async function test(
     },
   );
   appId = result.appId;
-  const environment = result.environment;
 
-  if (environment === "prod") {
-    const enteredHost = await text({
-      message: "Please enter the hostname of your Umbrel:",
-      initialValue: host,
+  const enteredHost = await text({
+    message: "Please enter the hostname of your Umbrel:",
+    initialValue: host,
+  });
+  if (isCancel(enteredHost)) {
+    cancel(MESSAGE_ABORTED);
+    await exit();
+    return;
+  }
+  host = enteredHost;
+
+  const enteredPort = await text({
+    message: "Please enter the port of your Umbrel:",
+    initialValue: String(port),
+  });
+  if (isCancel(enteredPort)) {
+    cancel(MESSAGE_ABORTED);
+    await exit();
+    return;
+  }
+  port = Number(enteredPort);
+
+  const enteredUsername = await text({
+    message: "Please enter the username for your Umbrel:",
+    initialValue: username,
+  });
+  if (isCancel(enteredUsername)) {
+    cancel(MESSAGE_ABORTED);
+    await exit();
+    return;
+  }
+  username = enteredUsername;
+
+  if (!password) {
+    const enteredPassword = await passwordPrompt({
+      message: "Please enter the password for your Umbrel:",
     });
-    if (isCancel(enteredHost)) {
+    if (isCancel(enteredPassword)) {
       cancel(MESSAGE_ABORTED);
       await exit();
       return;
     }
-    host = enteredHost;
+    password = enteredPassword;
+  }
 
-    const enteredPort = await text({
-      message: "Please enter the port of your Umbrel:",
-      initialValue: String(port),
-    });
-    if (isCancel(enteredPort)) {
-      cancel(MESSAGE_ABORTED);
-      await exit();
-      return;
-    }
-    port = Number(enteredPort);
-
-    const enteredUsername = await text({
-      message: "Please enter the username for your Umbrel:",
-      initialValue: username,
-    });
-    if (isCancel(enteredUsername)) {
-      cancel(MESSAGE_ABORTED);
-      await exit();
-      return;
-    }
-    username = enteredUsername;
-
-    if (!password) {
-      const enteredPassword = await passwordPrompt({
-        message: "Please enter the password for your Umbrel:",
-      });
-      if (isCancel(enteredPassword)) {
-        cancel(MESSAGE_ABORTED);
-        await exit();
-        return;
-      }
-      password = enteredPassword;
-    }
-
+  try {
     try {
-      try {
-        await sftp.connect({
-          host,
-          port,
-          username,
-          password,
-        });
-        log.success(pc.green("🎉 Successfully connected to Umbrel"));
-      } catch (err) {
-        log.error(pc.red("🚨 Error connecting to Umbrel: " + err));
-        cancel(
-          `❗ Please check the ssh connection manually by typing ${pc.bold(pc.cyan(`ssh ${port !== 22 ? `-p ${port} ` : ""}${username}@${host}`))}.`,
-        );
-        return;
-      }
-
-      const appStoresDir = "/home/umbrel/umbrel/app-stores";
-      const appDir = `${appStoresDir}/getumbrel-umbrel-apps-github-53f74447/${appId}`;
-
-      // Check if the app already exists on the umbrel and ask if the user wants to override it
-      if (await sftp.exists(appDir)) {
-        const override = await confirm({
-          message: pc.yellow(
-            `⚠️ The app ${pc.bold(appId)} already exists on your Umbrel. Do you want to override it?`,
-          ),
-          initialValue: false,
-        });
-        if (isCancel(override) || !override) {
-          cancel(MESSAGE_ABORTED);
-          await exit();
-          return;
-        }
-        await sftp.rmdir(appDir, true);
-      }
-
-      // Copy the app to the umbrel
-      const s = spinner();
-      s.start(pc.cyan(`📦 Copying ${pc.bold(appId)} to ${pc.bold(appDir)}`));
-      await sftp.uploadDir(path.join(cwd, appId), appDir, {
-        filter: (p) => !path.basename(p).startsWith("."),
-      });
-      s.stop(pc.cyan(`📦 Copying ${pc.bold(appId)} to ${pc.bold(appDir)} ✔️`));
-
-      // If there are any scripts, make them executable
-      s.start(pc.cyan(`🔧 Making scripts in ${pc.bold(appDir)} executable...`));
-      const executableFiles: string[] = [];
-      async function makeFilesExecutable(dir: string) {
-        const files = await sftp.list(dir);
-        for (const file of files) {
-          switch (file.type) {
-            case "d":
-              // If the file is a directory, recursively call the function
-              await makeFilesExecutable(path.posix.join(dir, file.name));
-              break;
-            case "-":
-              // If the file is not a directory and not a link, check if it is a script
-              if (file.name.endsWith(".sh") || dir.includes("hooks")) {
-                executableFiles.push(path.posix.join(dir, file.name));
-                await sftp.chmod(path.posix.join(dir, file.name), "755");
-              }
-              break;
-          }
-        }
-      }
-      await makeFilesExecutable(appDir);
-      s.stop(pc.cyan(`🔧 Making scripts in ${pc.bold(appDir)} executable ✔️`));
-      if (executableFiles.length > 0) {
-        log.info(
-          pc.cyan(
-            `ℹ️ The following files were made executable: ${pc.bold(
-              executableFiles
-                .map((p) => path.posix.relative(appDir, p))
-                .join(", "),
-            )}`,
-          ),
-        );
-      } else {
-        log.info(pc.cyan(`ℹ️ No scripts found to make executable`));
-      }
-    } finally {
-      await sftp.end();
-    }
-
-    // Open ssh connection to umbrel
-    const ssh = new SSHClient();
-    try {
-      await connect(ssh, {
+      await sftp.connect({
         host,
         port,
         username,
         password,
       });
-
-      // Check if the app is already installed
-      const isIntalledQueryResult = await execViaSSH(
-        ssh,
-        `umbreld client apps.state.query --appId ${appId}`,
-      );
-      let isAlreadyInstalled = false;
-      if (!isIntalledQueryResult.stdout.includes("not-installed")) {
-        isAlreadyInstalled = true;
-      }
-
-      // If already installed, udpate the app
-      if (isAlreadyInstalled) {
-        const update = await confirm({
-          message: pc.yellow(
-            `⚠️ The app ${pc.bold(appId)} is already installed on your Umbrel. Do you want to update it?`,
-          ),
-          initialValue: false,
-        });
-        if (isCancel(update) || !update) {
-          cancel(MESSAGE_ABORTED);
-          await exit();
-          return;
-        }
-        const updateResult = await execViaSSH(
-          ssh,
-          `umbreld client apps.update.mutate --appId ${appId}`,
-        );
-        if (updateResult.stdout.includes("false")) {
-          log.error(
-            pc.red(
-              `🚨 Error updating the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}`,
-            ),
-          );
-          return;
-        }
-      } else {
-        // Install the app
-        const installResult = await execViaSSH(
-          ssh,
-          `umbreld client apps.install.mutate --appId ${appId}`,
-        );
-        if (installResult.stdout.includes("false")) {
-          log.error(
-            pc.red(
-              `🚨 Error installing the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}.`,
-            ),
-          );
-          return;
-        }
-      }
-    } finally {
-      ssh.end();
-    }
-  } else {
-    // Dev environment
-    const appStoreLocation =
-      "/home/ubuntu/umbrel/packages/umbreld/data/app-stores/getumbrel-umbrel-apps-github-53f74447";
-
-    // Check if multipass is installed
-    try {
-      await execLocally("multipass --version");
-    } catch {
+      log.success(pc.green("🎉 Successfully connected to Umbrel"));
+    } catch (err) {
+      log.error(pc.red("🚨 Error connecting to Umbrel: " + err));
       cancel(
-        pc.red(
-          "🚨 Multipass is not installed on your system. Please install it and try again.",
-        ),
+        `❗ Please check the ssh connection manually by typing ${pc.bold(pc.cyan(`ssh ${port !== 22 ? `-p ${port} ` : ""}${username}@${host}`))}.`,
       );
-      await exit();
       return;
     }
 
-    // Select the Multipass VM to use
-    const vms = await listMultipassVMs();
-    let vm: string;
-    if (vms.length === 0) {
-      note(
-        `multipass launch --name umbrel-dev --cpus 4 --memory 8G --disk 50G 23.10
-multipass exec umbrel-dev -- sudo mkdir /opt/umbrel-mount
-multipass exec umbrel-dev -- sudo chown ubuntu:ubuntu /opt/umbrel-mount
-multipass exec umbrel-dev -- git clone https://github.com/getumbrel/umbrel.git /opt/umbrel-mount
-multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
-        pc.blue("You can create a VM by running:"),
-      );
-      cancel(
-        pc.red(
-          "🚨 No VMs found. Please create a VM using Multipass and try again.",
-        ),
-      );
-      await exit();
-      return;
-    } else if (vms.length === 1) {
-      vm = vms[0];
-      log.info(pc.blue(`ℹ️ Using Multipass VM ${pc.bold(vm)}`));
-    } else {
-      const selection = await select({
-        message: "Multiple Multipass VMs found! Please select the VM to use:",
-        options: vms.map((vm) => ({ value: vm, label: vm })),
-        initialValue: vms[0],
-      });
-      if (isCancel(selection)) {
-        cancel(MESSAGE_ABORTED);
-        await exit();
-        return;
-      }
-      vm = selection;
-    }
-    host = `${vm}.local`;
+    const appStoresDir = "/home/umbrel/umbrel/app-stores";
+    const appDir = `${appStoresDir}/getumbrel-umbrel-apps-github-53f74447/${appId}`;
 
     // Check if the app already exists on the umbrel and ask if the user wants to override it
-    let appAlreadyExists;
-    try {
-      await execLocally(
-        `multipass exec ${vm} -- ls ${appStoreLocation}/${appId}`,
-      );
-      appAlreadyExists = true;
-    } catch {
-      appAlreadyExists = false;
-    }
-
-    if (appAlreadyExists) {
+    if (await sftp.exists(appDir)) {
       const override = await confirm({
         message: pc.yellow(
           `⚠️ The app ${pc.bold(appId)} already exists on your Umbrel. Do you want to override it?`,
@@ -372,56 +164,142 @@ multipass exec umbrel-dev -- /opt/umbrel-mount/scripts/vm provision`,
         await exit();
         return;
       }
-      await execLocally(
-        `multipass exec ${vm} -- rm -rf ${appStoreLocation}/${appId}`,
-      );
+      await sftp.rmdir(appDir, true);
     }
 
     // Copy the app to the umbrel
-    await execLocally(
-      `multipass transfer -r ${path.join(cwd, appId)} ${vm}:${appStoreLocation}`,
+    const s = spinner();
+    s.start(pc.cyan(`📦 Copying ${pc.bold(appId)} to ${pc.bold(appDir)}`));
+    const uploadedFiles: string[] = [];
+    async function uploadDirWithUnixLineEndings(
+      localDir: string,
+      remoteDir: string,
+      filter: (path: string) => boolean,
+    ) {
+      const files = fs.readdirSync(localDir, { withFileTypes: true });
+      await sftp.mkdir(remoteDir, true);
+      for (const file of files) {
+        const localPath = path.join(localDir, file.name);
+        if (!filter(localPath)) {
+          continue;
+        }
+        const remotePath = path.posix.join(remoteDir, file.name);
+        if (file.isDirectory()) {
+          await uploadDirWithUnixLineEndings(localPath, remotePath, filter);
+        } else if (!file.name.startsWith(".")) {
+          let content = fs.readFileSync(localPath, "utf8");
+          content = content.replaceAll(/\r\n/g, "\n");
+          await sftp.put(Buffer.from(content, "utf8"), remotePath);
+          uploadedFiles.push(remotePath);
+        }
+      }
+    }
+    await uploadDirWithUnixLineEndings(
+      path.join(cwd, appId),
+      appDir,
+      (p) => !path.basename(p).startsWith("."),
+    );
+    s.stop(
+      pc.cyan(`📦 Copying ${pc.bold(appId)} to ${pc.bold(appDir)} ✔️`) +
+        createSpinnerResult(
+          uploadedFiles.map((p) => path.posix.relative(appDir, p)),
+        ),
     );
 
-    // Check if the app is already installed
-    let isAlreadyInstalled = false;
-    try {
-      const result = await execLocally(
-        `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.state.query --appId ${appId}`,
-      );
-      if (result.stdout.includes("not-installed")) {
-        isAlreadyInstalled = false;
-      } else {
-        isAlreadyInstalled = true;
+    // If there are any scripts, make them executable
+    s.start(pc.cyan(`🔧 Making scripts in ${pc.bold(appDir)} executable...`));
+    const executableFiles: string[] = [];
+    async function makeFilesExecutable(dir: string) {
+      const files = await sftp.list(dir);
+      for (const file of files) {
+        switch (file.type) {
+          case "d":
+            // If the file is a directory, recursively call the function
+            await makeFilesExecutable(path.posix.join(dir, file.name));
+            break;
+          case "-":
+            // If the file is not a directory and not a link, check if it is a script
+            if (file.name.endsWith(".sh") || dir.includes("hooks")) {
+              await sftp.chmod(path.posix.join(dir, file.name), "755");
+              executableFiles.push(path.posix.join(dir, file.name));
+            }
+            break;
+        }
       }
-    } catch (err) {
-      log.error(
-        pc.red(
-          pc.bold("🚨 Error checking if the app was already installed: ") + err,
-        ),
-      );
-      return;
     }
+    await makeFilesExecutable(appDir);
+    s.stop(
+      pc.cyan(`🔧 Making scripts in ${pc.bold(appDir)} executable ✔️`) +
+        createSpinnerResult(
+          executableFiles.map((p) => path.posix.relative(appDir, p)),
+        ),
+    );
+  } finally {
+    await sftp.end();
+  }
+
+  // Open ssh connection to umbrel
+  const ssh = new SSHClient();
+  try {
+    await connect(ssh, {
+      host,
+      port,
+      username,
+      password,
+    });
+
+    // Check if the app is already installed
+    const isIntalledQueryResult = await execViaSSH(
+      ssh,
+      `umbreld client apps.state.query --appId ${appId}`,
+    );
+    let isAlreadyInstalled = false;
+    if (!isIntalledQueryResult.stdout.includes("not-installed")) {
+      isAlreadyInstalled = true;
+    }
+
+    // If already installed, udpate the app
     if (isAlreadyInstalled) {
-      const reinstall = await confirm({
+      const update = await confirm({
         message: pc.yellow(
-          `⚠️ The app ${pc.bold(appId)} is already installed on your Multipass VM. Do you want to reinstall it?`,
+          `⚠️ The app ${pc.bold(appId)} is already installed on your Umbrel. Do you want to update it?`,
         ),
         initialValue: false,
       });
-      if (isCancel(reinstall) || !reinstall) {
+      if (isCancel(update) || !update) {
         cancel(MESSAGE_ABORTED);
         await exit();
         return;
       }
-      await execLocally(
-        `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.uninstall.mutate --appId ${appId}`,
+      const updateResult = await execViaSSH(
+        ssh,
+        `umbreld client apps.update.mutate --appId ${appId}`,
       );
+      if (updateResult.stdout.includes("false")) {
+        log.error(
+          pc.red(
+            `🚨 Error updating the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}`,
+          ),
+        );
+        return;
+      }
+    } else {
+      // Install the app
+      const installResult = await execViaSSH(
+        ssh,
+        `umbreld client apps.install.mutate --appId ${appId}`,
+      );
+      if (installResult.stdout.includes("false")) {
+        log.error(
+          pc.red(
+            `🚨 Error installing the app! For more information visit ${pc.bold("Settings -> Troubleshoot -> umbrelOS")}.`,
+          ),
+        );
+        return;
+      }
     }
-
-    // Install the app
-    await execLocally(
-      `multipass exec ${vm} -- UMBREL_DATA_DIR=./data UMBREL_TRPC_ENDPOINT=http://localhost/trpc npm --prefix /home/ubuntu/umbrel/packages/umbreld run start -- client apps.install.mutate --appId ${appId}`,
-    );
+  } finally {
+    ssh.end();
   }
 
   // Open the app
@@ -505,13 +383,17 @@ async function _execCommon(
 
   const output = result.stdout || result.stderr;
   const lines = output.split("\n");
+  const spinnerResult = createSpinnerResult(lines);
+
+  s.stop(
+    `${pc.cyan(`🏃 Executing ${pc.bold(formattedCommand)} ✔️`)}${spinnerResult}`,
+  );
+  return result;
+}
+
+function createSpinnerResult(lines: string[]) {
   while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
     lines.pop();
   }
-  const formattedOutput = pc.gray("\n│  " + lines.join("\n│  "));
-
-  s.stop(
-    `${pc.cyan(`🏃 Executing ${pc.bold(formattedCommand)} ✔️`)}${formattedOutput}`,
-  );
-  return result;
+  return pc.gray("\n│  " + lines.join("\n│  "));
 }

@@ -30,7 +30,7 @@ export async function getUmbrelAppYmls(cwd: string): Promise<string[]> {
     if (appId.name !== "umbrel-app.yml") {
       continue;
     }
-    const file = path.resolve(appId.path, appId.name);
+    const file = path.resolve(appId.parentPath, appId.name);
     const yml = await fs.readFile(file, "utf-8");
     rawUmbrelAppYmls.push(yml);
   }

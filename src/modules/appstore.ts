@@ -56,7 +56,7 @@ export async function isAppStoreDirectory(cwd: string) {
       continue;
     }
     // Check if the depth of the file is 1
-    const difference = path.relative(cwd, entry.path);
+    const difference = path.relative(cwd, entry.parentPath);
     return difference.split(path.sep).length === 1;
   }
   return false;
