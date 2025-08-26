@@ -23,6 +23,7 @@ export interface LintingResult {
     | "invalid_app_data_dir_volume_mount"
     | "invalid_submission_field"
     | "missing_file_or_directory"
+    | "docker_socket_mount"
     | "empty_app_data_directory"
     | "external_port_mapping"
     | "invalid_image_architectures"
@@ -486,6 +487,42 @@ export async function lintDockerComposeYml(
               });
             }
           }
+        }
+      }
+    }
+  }
+
+  // Check if the docker socket is mounted
+  for (const service of services) {
+    const volumes = dockerComposeYml.services?.[service]?.volumes;
+    if (volumes && Array.isArray(volumes)) {
+      for (const volume of volumes) {
+        if (
+          typeof volume === "string" &&
+          volume.includes("/var/run/docker.sock")
+        ) {
+          result.push({
+            id: "docker_socket_mount",
+            propertiesPath: `services.${service}.volumes`,
+            ...getSourceMapForKey(content, ["services", service, "volumes"]),
+            severity: "warning",
+            title: `Docker socket is mounted in "${service}"`,
+            message: `The volume "${volume}" mounts the Docker socket, which can be a security risk. Consider using docker-in-docker instead (see portainer as an example).`,
+            file: `${id}/docker-compose.yml`,
+          });
+        } else if (
+          typeof volume === "object" &&
+          volume.source.includes("/var/run/docker.sock")
+        ) {
+          result.push({
+            id: "docker_socket_mount",
+            propertiesPath: `services.${service}.volumes`,
+            ...getSourceMapForKey(content, ["services", service, "volumes"]),
+            severity: "warning",
+            title: `Docker socket is mounted in "${service}"`,
+            message: `The volume "${volume.source}:${volume.target}" mounts the Docker socket, which can be a security risk. Consider using docker-in-docker instead (see portainer as an example).`,
+            file: `${id}/docker-compose.yml`,
+          });
         }
       }
     }

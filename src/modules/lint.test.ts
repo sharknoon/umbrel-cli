@@ -548,6 +548,52 @@ services:
     });
   });
 
+  it("should return warnings for docker socket mounts", async () => {
+    const content = `
+version: "3"
+services:
+  app:
+    user: "1000:1000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+`;
+    const id = "umbrel-app";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      id: "docker_socket_mount",
+      severity: "warning",
+      title: `Docker socket is mounted in "app"`,
+      message: `The volume "/var/run/docker.sock:/var/run/docker.sock" mounts the Docker socket, which can be a security risk. Consider using docker-in-docker instead (see portainer as an example).`,
+      file: `${id}/docker-compose.yml`,
+    });
+  });
+
+  it("should return warnings for docker socket mounts with the object volume syntax", async () => {
+    const content = `
+version: "3"
+services:
+  app:
+    user: "1000:1000"
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+`;
+    const id = "umbrel-app";
+    const files: Entry[] = [];
+    const results = await lintDockerComposeYml(content, id, files);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject<LintingResult>({
+      id: "docker_socket_mount",
+      severity: "warning",
+      title: `Docker socket is mounted in "app"`,
+      message: `The volume "/var/run/docker.sock:/var/run/docker.sock" mounts the Docker socket, which can be a security risk. Consider using docker-in-docker instead (see portainer as an example).`,
+      file: `${id}/docker-compose.yml`,
+    });
+  });
+
   it("should return errors for images with invalid architectures", async () => {
     const content = `
 version: "3"
