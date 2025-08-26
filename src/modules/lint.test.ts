@@ -797,11 +797,6 @@ services:
 version: "3.7"
 
 services:
-  app_proxy:
-    environment:
-      APP_HOST: file-browser_server_1
-      APP_PORT: 80
-
   server:
     user: "1000:1000"
     restart: always
