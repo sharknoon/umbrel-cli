@@ -54,7 +54,7 @@ export default async function umbrelAppYmlSchema() {
         }
         return String(val);
       }, z.string().min(1).max(50)),
-      website: z.string().url(),
+      website: z.url(),
       submitter: z.preprocess((val) => {
         if (val === undefined || val === null) {
           return val;
@@ -79,6 +79,7 @@ export default async function umbrelAppYmlSchema() {
       installSize: z.number().int().min(0).optional(),
       widgets: z.any().array().optional(), // TODO: Define this type
       defaultShell: z.string().optional(),
+      backupIgnore: z.string().array().optional(),
     })
     .refine((data) => !data.dependencies?.includes(data.id), {
       error: "Dependencies can't include its own app id",

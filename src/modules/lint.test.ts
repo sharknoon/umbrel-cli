@@ -79,6 +79,7 @@ developer: "Sparkles Inc."
 submitter: "John Doe"
 repo: "http://github.com/sparkles/sparkles"
 submission: "https://github.com/user/repo/pull/123"
+backupIgnore: []
     `;
     const id = "sparkles";
     const options = {
