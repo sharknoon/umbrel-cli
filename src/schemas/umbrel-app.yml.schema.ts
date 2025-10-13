@@ -61,13 +61,13 @@ export default async function umbrelAppYmlSchema() {
         }
         return String(val);
       }, z.string().min(1).max(50)),
-      submission: z.string().url(),
-      repo: z.union([z.string().url(), z.literal("")]).optional(),
-      support: z.string().url(),
+      submission: z.url(),
+      repo: z.union([z.url(), z.literal("")]).optional(),
+      support: z.url(),
       gallery: z.string().array(),
       releaseNotes: z.string().min(0).max(5000).optional(),
       dependencies: z.string().array(),
-      permissions: z.enum(["STORAGE_DOWNLOADS"]).array().optional(),
+      permissions: z.enum(["STORAGE_DOWNLOADS", "GPU"]).array().optional(),
       path: z
         .string()
         .refine((path) => isValidUrl(`https://example.com${path}`)),
