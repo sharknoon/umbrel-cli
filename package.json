@@ -1,6 +1,6 @@
 {
   "name": "umbrel-cli",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "A small cli tool to help you create and maintain your umbrel apps",
   "type": "module",
   "main": "./dist/cli.js",
