@@ -5,6 +5,10 @@ on:
     branches:
       - "main"
 
+permissions:
+  id-token: write  # Required for OIDC
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -18,33 +22,20 @@ jobs:
         with:
           diff-search: true
 
-  test:
-    if: needs.check.outputs.changed == 'true'
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: npm ci
-      - run: npm run test
-
   release:
+    if: needs.check.outputs.changed == 'true'
     needs:
       - check
-      - test
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
+      - run: npm install -g npm@latest
       - run: npm ci
+      - run: npm run test
       - run: npm publish
       - uses: softprops/action-gh-release@v2
         with:
