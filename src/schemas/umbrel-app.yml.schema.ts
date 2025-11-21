@@ -44,6 +44,7 @@ export default async function umbrelAppYmlSchema() {
         "finance",
         "ai",
         "developer",
+        "crypto",
       ]),
       version: z.string().min(1),
       port: z.number().int().min(0).max(65535),
